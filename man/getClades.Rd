@@ -1,20 +1,19 @@
-\name{getAge}
-\alias{getAge}
-\title{Return age of node}
+\name{getClades}
+\alias{getClades}
+\title{Return all children of each node}
 \usage{
-getAge(tree, node)
+getClades(tree)
 }
 \arguments{
   \item{tree}{phylogenetic tree (ape class)}
-
-  \item{node}{number indicating node}
 }
 \description{
-Return age of tip or internal node (so long as the tree
-provided is time calibrated with branch lengths).
+All children for each node in the tree are returned.
 }
 \details{
-No details
+Returns a list of lists: 'clade.children' contains all the
+children of each clade, 'clade.node' contains the clade
+number of each clade in clade.children.
 }
 \examples{
 # example.var <- exampleFun (test.data)

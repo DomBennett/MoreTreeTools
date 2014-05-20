@@ -1,8 +1,8 @@
-\name{getAge}
-\alias{getAge}
-\title{Return age of node}
+\name{getNodes}
+\alias{getNodes}
+\title{Return ascendant nodes}
 \usage{
-getAge(tree, node)
+getNodes(tree, node)
 }
 \arguments{
   \item{tree}{phylogenetic tree (ape class)}
@@ -10,8 +10,8 @@ getAge(tree, node)
   \item{node}{number indicating node}
 }
 \description{
-Return age of tip or internal node (so long as the tree
-provided is time calibrated with branch lengths).
+Return all nodes that connect the specified node to the
+root
 }
 \details{
 No details
