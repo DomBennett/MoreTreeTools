@@ -1,11 +1,11 @@
-\name{nodeDescendants}
-\alias{nodeDescendants}
+\name{getChildren}
+\alias{getChildren}
 \title{Return descendant species from a node}
 \usage{
-nodeDescendants(phylo, node, display = FALSE)
+getChildren(tree, node, display = FALSE)
 }
 \arguments{
-  \item{phylo}{phylogenetic tree (ape class)}
+  \item{tree}{phylogenetic tree (ape class)}
 
   \item{node}{number indicating node}
 
@@ -22,8 +22,12 @@ No details
 # example.var <- exampleFun (test.data)
 }
 \references{
-Me, I (2014) My wonderful paper, All about me, 1:1:1
-\url{test.url}.
+No references yet!
+\url{https://github.com/DomBennett/MoreTreeTools}.
 }
-\keyword{manip}
+\keyword{ecology}
+\keyword{evolution}
+\keyword{manipulation}
+\keyword{palaeontology}
+\keyword{phylogeny}
 
