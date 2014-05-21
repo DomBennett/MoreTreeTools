@@ -1,4 +1,6 @@
 import (methods)
 import (ape)
 import (plyr)
+importFrom (RJSONIO, fromJSON)
+importFrom (stringr, str_replace_all)
 exportPattern("^[[:alpha:]]+")
