@@ -39,7 +39,8 @@ getChildren <- function(tree, node, display = FALSE) {
 
 #' @name getAge
 #' @title Return age of node
-#' @description Return age of tip or internal node (so long as the tree provided is time calibrated with branch lengths).
+#' @description Return age of tip or internal node
+#'  (so long as the tree provided is time calibrated with branch lengths).
 #' @details No details
 #' @template base_template
 #' @param node number indicating node
@@ -93,7 +94,7 @@ getSister <- function (tree, node) {
 
 #' @name getEdges
 #' @title Return edges
-#' @description Return all descendant edges from a node,
+#' @description Return all children edges from a node,
 #'  or all edges connected to tips based on three different methods
 #' @details If node specified, all edges that descend from specified node are returned
 #' 
@@ -113,8 +114,8 @@ getSister <- function (tree, node) {
 #' @examples
 #' # example.var <- exampleFun (test.data)
 
-getEdges <- function (tree, node = NA, tips = NA, type = 1) {
-  if (!is.na (node)) {
+getEdges <- function (tree, node = NULL, tips = NULL, type = 1) {
+  if (!is.null (node)) {
     ## Find all edges from given node to tips
     edges <- c ()
     while (TRUE) {
@@ -192,7 +193,7 @@ getEdges <- function (tree, node = NA, tips = NA, type = 1) {
 }
 
 #' @name getNodes
-#' @title Return ascendant nodes
+#' @title Return parent nodes
 #' @description Return all nodes that connect the specified node to the root
 #' @details No details
 #' @template base_template
@@ -237,4 +238,52 @@ getClades <- function (tree) {
   clades <- clades[order (sizes, decreasing = TRUE)]
   nodes <- nodes[order (sizes, decreasing = TRUE)]
   list (clade.children = clades, clade.node = nodes)
+}
+
+#' @name getNodeLabels
+#' @title Return node labels based on online taxonomic database
+#' @description Return names of each node in tree based on searching tip labels
+#'  in the Global Names Resolver \url{http://resolver.globalnames.org/}
+#' @details For each node, all the children are searched, the taxonomic lineages returned and
+#' then searched to find the lowest shared name.
+#' All the tip labels are searched against a specified taxonomic database through the GNR.
+#'  The default is NCBI (4). For a list of other possible datasources see:
+#'   \url{http://resolver.globalnames.biodinfo.org/data_sources}
+#' @template base_template
+#' @param all count tips as nodes, default False
+#' @param datasource a number indicating the GNR datasource to search against
+#' @export
+#' @examples
+#' # example.var <- exampleFun (test.data)
+
+getNodeLabels <- function (tree, all = FALSE, datasource = 4) {
+  # Use GNR to label all nodes in a phylogeny
+  # first replace all _ with spaces
+  tree$tip.label <- gsub ('_', ' ', tree$tip.label)
+  taxa.res <- .taxaResolve (tree$tip.label, datasource = datasource)
+  nodes <- 1:(length (tree$tip.label) + tree$Nnode)
+  node.label <- rep (NA, length (nodes))
+  # for tips use the first word of the name
+  node.label[1:length (tree$tip.label)] <-
+    unlist (lapply (strsplit (tree$tip.label, "\\s+"), function (x) x[1]))
+  for (i in (length (tree$tip.label) + 1):length (nodes)) {
+    children <- getChildren (tree, node = i)
+    genus.names <- unlist (lapply (strsplit (children, " "), function (x) x[1]))
+    if (all (genus.names == genus.names[1])) {
+      node.label[i] <- genus.names[1]
+    } else {
+      lineages <- as.character (taxa.res[taxa.res$search.name %in% children,
+                                         "lineage"])
+      lineages <- strsplit (lineages, "\\|")
+      lineages <- lineages[!is.na (lineages)]
+      if (length (lineages) > 0) {
+        node.label[i] <- .findClade (lineages)
+      }
+    }
+  }
+  if (all) {
+    return (node.label)
+  } else {
+    return (node.label[-(1:length(tree$tip.label))])
+  }
 }
