@@ -2,7 +2,7 @@
 \alias{getEdges}
 \title{Return edges}
 \usage{
-getEdges(tree, node = NA, tips = NA, type = 1)
+getEdges(tree, node = NULL, tips = NULL, type = 1)
 }
 \arguments{
   \item{tree}{phylogenetic tree (ape class)}
@@ -14,7 +14,7 @@ getEdges(tree, node = NA, tips = NA, type = 1)
   \item{type}{1, 2 or 3 indicating which method to use}
 }
 \description{
-Return all descendant edges from a node, or all edges
+Return all children edges from a node, or all edges
 connected to tips based on three different methods
 }
 \details{

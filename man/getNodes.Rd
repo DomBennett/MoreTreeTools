@@ -1,6 +1,6 @@
 \name{getNodes}
 \alias{getNodes}
-\title{Return ascendant nodes}
+\title{Return parent nodes}
 \usage{
 getNodes(tree, node)
 }
