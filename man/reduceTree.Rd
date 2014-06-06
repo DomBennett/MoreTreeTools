@@ -2,7 +2,7 @@
 \alias{reduceTree}
 \title{Reduce tree by taxonomic rank}
 \usage{
-reduceTree(tree, level, datasource)
+reduceTree(tree, level, datasource = 4)
 }
 \arguments{
   \item{tree}{phylogenetic tree (ape class)}
