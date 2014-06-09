@@ -227,7 +227,7 @@ getClades <- function (tree) {
   if (is.null (tree$all.node)) {
     nodes <- 1:(tree$Nnode + length (tree$tip.label))
   } else {
-    nodes <- phylo$all.node
+    nodes <- tree$all.node
   }
   clades <- mlply (.data = data.frame (node = nodes),
                    .fun = getChildren, tree)
