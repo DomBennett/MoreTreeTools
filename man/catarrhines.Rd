@@ -12,7 +12,7 @@
   \code{catarrhines} is a \code{phylo} from the pacakge \code{ape}.
 }
 \source{
-  Bininda-Emonds, O. R. P., Cardillo, M., Jones, K. E., MacPhee, R. D. E., Beck, R. M. D., Grenyer, R., … Purvis, A. (2007). The delayed rise of present-day mammals. Nature, 446(7135), 507–12. doi:10.1038/nature05634
+   Bininda-Edmonds et al. (2007) The Delayed Rise of Present-Day Mammals. Nature, 446(7135): 507-512
 }
 \examples{
 data (catarrhines) # load object
