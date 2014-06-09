@@ -1,3 +1,2 @@
-
 library(testthat)
-test_check("MoreTreeTools")
+test_check ("MoreTreeTools")
