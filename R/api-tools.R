@@ -15,8 +15,8 @@
 }
 
 .taxaResolve <- function (names, batch = 100, datasource = 4){
-  # Resolve taxonomic names via the Global Names Resolver. Names that cannot be resolved
-  #  are returned as NA.
+  # Resolve taxonomic names via the Global Names Resolver.
+  #  Names that cannot be resolved are returned as NA.
   #
   # Args:
   #  names: vector of names
@@ -28,8 +28,10 @@
     #create query from names
     url <- "http://resolver.globalnames.org/name_resolvers.json?"
     data_source_ids <- paste0 ("&data_source_ids=", datasource)
-    names2 <- paste0 ("names=", paste0 (str_replace_all (batch.names, " ", "+"), collapse = "|"))
-    query <- paste (compact (list (url, names2, data_source_ids)), collapse = "")
+    names2 <- paste0 ("names=", paste0 (str_replace_all (
+      batch.names, " ", "+"), collapse = "|"))
+    query <- paste (compact (list (url, names2,
+                                   data_source_ids)), collapse = "")
     #search via API
     data <- .safeFromJSON (query)$data
     return (data)
@@ -44,30 +46,41 @@
     data <- c (data, temp.data)
   }
   #transform results into output
-  search.name <- name.string <- canonical.form <- lineage <- lineage.ids <-
-    rank <- taxid <- match.type <- prescore <- score <- rep (NA, length (names))
+  search.name <- name.string <- canonical.form <-
+    lineage <- lineage.ids <- rank <- taxid <-
+    match.type <- prescore <- score <- rep (NA, length (names))
   for (i in 1:length (names)){
     #print(i)
     if (length (data[[i]]) == 1){
       search.name[i] <- data[[i]][[1]]
-      name.string[i] <- canonical.form[i] <- lineage[i] <- lineage.ids[i] 
-      rank[i] <- taxid[i] <- match.type[i] <- prescore[i] <- score[i] <- NA
     } else {
       search.name[i] <- data[[i]][[1]]
-      name.string[i] <- data[[i]]$results[[1]]$name_string
-      canonical.form[i] <- data[[i]]$results[[1]]$canonical_form
-      lineage[i] <- data[[i]]$results[[1]]$classification_path
-      lineage.ids[i] <- data[[i]]$results[[1]]$classification_path_ids
-      rank[i] <- data[[i]]$results[[1]]$classification_path_ranks
-      taxid[i] <- data[[i]]$results[[1]]$taxon_id
-      match.type[i] <- data[[i]]$results[[1]]$match_type
-      prescore[i] <- data[[i]]$results[[1]]$prescore
+      name.string[i] <-
+        data[[i]]$results[[1]]$name_string
+      canonical.form[i] <-
+        data[[i]]$results[[1]]$canonical_form
+      lineage[i] <-
+        data[[i]]$results[[1]]$classification_path
+      lineage.ids[i] <-
+        data[[i]]$results[[1]]$classification_path_ids
+      rank[i] <-
+        data[[i]]$results[[1]]$classification_path_ranks
+      taxid[i] <-
+        data[[i]]$results[[1]]$taxon_id
+      match.type[i] <-
+        data[[i]]$results[[1]]$match_type
+      prescore[i] <-
+        data[[i]]$results[[1]]$prescore
       score[i] <- data[[i]]$results[[1]]$score
     }
   }
-  res <- data.frame (search.name = search.name, name.string = name.string,
-                     canonical.form = canonical.form,lineage = lineage,
-                     lineage.ids = lineage.ids, rank = rank, taxid = taxid,
-                     match.type = match.type, prescore = prescore, score = score)
+  res <- data.frame (search.name = search.name,
+                     name.string = name.string,
+                     canonical.form = canonical.form,
+                     lineage = lineage, lineage.ids =
+                       lineage.ids, rank = rank,
+                     taxid = taxid, match.type =
+                       match.type, prescore = prescore,
+                     score = score)
   return (res)
 }
