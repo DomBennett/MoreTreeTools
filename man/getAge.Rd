@@ -2,19 +2,22 @@
 \alias{getAge}
 \title{Return age of node}
 \usage{
-getAge(tree, node)
+getAge(tree, node = "all")
 }
 \arguments{
   \item{tree}{phylogenetic tree (ape class)}
 
-  \item{node}{number indicating node}
+  \item{node}{number indicating node (default 'all')}
 }
 \description{
 Return age of tip or internal node (so long as the tree
 provided is time calibrated with branch lengths).
 }
 \details{
-No details
+First calculates the root to tip distance, then calculates
+node age by subtracting this distance from the root to node
+distance. If \code{node} equals 'all', will return a
+dataframe for all nodes.
 }
 \examples{
 # example.var <- exampleFun (test.data)
