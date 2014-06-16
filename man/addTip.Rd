@@ -1,0 +1,45 @@
+\name{addTip}
+\alias{addTip}
+\title{Add a new tip to a phylogenetic tree}
+\usage{
+addTip(tree, edge, tip.name, node.age, tip.age = 0, node.label)
+}
+\arguments{
+  \item{tree}{phylogenetic tree (ape class)}
+
+  \item{edge}{tree branch where tip will be added}
+
+  \item{tip.name}{name for the new tip to be added}
+
+  \item{node.age}{age of the new node to be created}
+
+  \item{tip.age}{age of the new tip to be added (default
+  0)}
+
+  \item{node.label}{label for the new}
+}
+\description{
+A new tip is added to an existing phylogenetic tree by
+specifying an edge/branch in the tree, name of the new tip
+and ages of the new tip and node.
+}
+\details{
+Return a tree with an extra tip. The new tip is created by
+finding the \code{edge} in the tree, adding a new node at
+\code{node.age} and then by adding a new branch to
+\code{tip.age}. The function is modified code from
+\code{multi2di} from \code{ape}.
+}
+\examples{
+# example.var <- exampleFun (test.data)
+}
+\references{
+No references yet!
+\url{https://github.com/DomBennett/MoreTreeTools}.
+}
+\keyword{ecology}
+\keyword{evolution}
+\keyword{manipulation}
+\keyword{palaeontology}
+\keyword{phylogeny}
+
