@@ -1,0 +1,32 @@
+\name{removeTip}
+\alias{removeTip}
+\title{Remove a tip from a phylogenetic tree}
+\usage{
+removeTip(tree, tip.name)
+}
+\arguments{
+  \item{tree}{phylogenetic tree (ape class)}
+
+  \item{tip.name}{of tip to be dropped}
+}
+\description{
+Remove a tip from a phylogenetic tree.
+}
+\details{
+Return a tree with specified tip dropped. This function
+differs from \code{ape}'s \code{drop.tip} as it works with
+\code{MoreTreeTools}' node labelling convention.
+}
+\examples{
+# example.var <- exampleFun (test.data)
+}
+\references{
+No references yet!
+\url{https://github.com/DomBennett/MoreTreeTools}.
+}
+\keyword{ecology}
+\keyword{evolution}
+\keyword{manipulation}
+\keyword{palaeontology}
+\keyword{phylogeny}
+

@@ -25,3 +25,9 @@ test_that ('addTip([basic]) works', {
   expect_that (length (res$tip.label),
                equals (length (hominoids$tip.label) + 1))
 })
+
+test_that ('removeTip([basic]) works', {
+  res <- removeTip (hominoids, tip.name = 'Gorilla gorilla')
+  expect_that (length (res$tip.label),
+               equals (length (hominoids$tip.label) - 1))
+})
