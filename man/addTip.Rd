@@ -28,7 +28,10 @@ Return a tree with an extra tip. The new tip is created by
 finding the \code{edge} in the tree, adding a new node at
 \code{node.age} and then by adding a new branch to
 \code{tip.age}. The function is modified code from
-\code{multi2di} from \code{ape}.
+\code{multi2di} from \code{ape}. N.B. \code{ape} uses
+node.label to label all internal nodes,
+\code{MoreTreeTools} uses it to labels all nodes including
+tip nodes.
 }
 \examples{
 # example.var <- exampleFun (test.data)
