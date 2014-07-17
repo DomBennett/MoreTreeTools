@@ -16,3 +16,11 @@ test_that ('reduceTree([basic]) works', {
   res <- reduceTree (catarrhines, 'genus')
   expect_that (length (res$tip.label), equals (23))
 })
+
+test_that ('calcFairProportion([basic]) works', {
+  res <- calcFairProportion (catarrhines)
+  # orangutan is the most distinct
+  most.distinct <-
+    as.character (res[which (res[ ,2] == max (res[ ,2])), 1])
+  expect_that ("Pongo pygmaeus", equals (most.distinct))
+})

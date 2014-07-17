@@ -69,3 +69,36 @@ reduceTree <- function (tree, level, datasource = 4) {
   tree$tip.label <- as.character(name.df[['tip.labels']][bool])
   tree
 }
+
+#' @name calcFairProportion
+#' @title Calculate Evolutionary Distinctiveness (Fair Proportion)
+#' @description Calculate the proportion of a phylogenetic tree that
+#'  species represent
+#' @details Calculate the evolutionary distinctivess of species using
+#' Issac et al. (2007)'s Fair Proportion.
+#' @template base_template
+#' @param tips vector of tips for which FP is calculated, else 'all'
+#' @param progress bar showing the progress of the calculation. Either
+#' time, text, tk or none. Uses \code{plyr}'s \code{create_progress_bar}.
+#' @export
+#' @examples
+#' # example.var <- exampleFun (test.data)
+
+calcFairProportion <- function (tree, tips = 'all', progress = 'none') {
+  countChildren <- function (node) {
+    length (getChildren (tree, node))
+  }
+  calcSpecies <- function (sp) {
+    edges <- getEdges (tree, tips = as.character (sp), type = 2)
+    n.children = mdply (.data = data.frame (node = tree$edge[edges, 2]),
+                     .fun = countChildren)[ ,2]
+    sum (tree$edge.length[edges]/n.children)
+  }
+  if (tips[1] == 'all') {
+    tips <- tree$tip.label
+  }
+  EDs <- mdply (.data = data.frame (sp = tips),
+                .fun = calcSpecies,
+                .progress = create_progress_bar (name = progress))
+  EDs
+}
