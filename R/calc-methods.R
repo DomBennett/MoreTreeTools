@@ -70,35 +70,68 @@ reduceTree <- function (tree, level, datasource = 4) {
   tree
 }
 
-#' @name calcFairProportion
-#' @title Calculate Evolutionary Distinctiveness (Fair Proportion)
-#' @description Calculate the proportion of a phylogenetic tree that
-#'  species represent
-#' @details Calculate the evolutionary distinctivess of species using
-#' Issac et al. (2007)'s Fair Proportion.
+#' @name calcED
+#' @title Calculate Evolutionary Distinctiveness (Fair Proportion or Pendant Edge)
+#' @description Calculate species evolutionary distinctiveness (ED) using either of two methods:
+#'  Fair Proportion (FP) or Pendant Edge (PE).
+#' @details Evolutionary distinctiveness is a measure of how much independent evolution a species
+#'  represents. Multiple methods exist for its calculation all of which require an ultrametric
+#'  phylogenetic tree. The methods used here are Pendant Edge (PE) the length of a species branch
+#'  that connects it to the tree (Altschul and Lipman, 1990) or Fair Proportion (FP) the total
+#'  proportion of the phylogenetic tree that a species represents where each branch is equally
+#'  divided between all descdendants (Isaac et al. 2007).
+#'  
+#'  N.B. \code{picante} already has a function for doing this. \code{calcED}, however, uses \code{plyr}
+#'  vectorisation and should be faster.
 #' @template base_template
-#' @param tips vector of tips for which FP is calculated, else 'all'
+#' @param tips vector of tips for which ED is calculated, else 'all'
+#' @param type method of ED calculation, either 'FP' or 'PE'
 #' @param progress bar showing the progress of the calculation. Either
 #' time, text, tk or none. Uses \code{plyr}'s \code{create_progress_bar}.
+#' @references Isaac, N.J.B., Turvey, S.T., Collen, B., Waterman, C. and Baillie, J.E.M. (2007). 
+#'  Mammals on the EDGE: conservation priorities based on threat and phylogeny. PLoS ONE, 2, e296.
+#'  
+#'  Altschul, S., and Lipman, D. (1990). Equal animals. Nature.
 #' @export
 #' @examples
 #' # example.var <- exampleFun (test.data)
 
-calcFairProportion <- function (tree, tips = 'all', progress = 'none') {
-  countChildren <- function (node) {
-    length (getChildren (tree, node))
+calcED <- function (tree, tips = 'all', type = 'FP', progress = 'none') {
+  calcFairProportion <- function (tips) {
+    countChildren <- function (node) {
+      length (getChildren (tree, node))
+    }
+    calcSpecies <- function (sp) {
+      edges <- getEdges (tree, tips = as.character (sp), type = 2)
+      n.children = mdply (.data = data.frame (node = tree$edge[edges, 2]),
+                          .fun = countChildren)[ ,2]
+      sum (tree$edge.length[edges]/n.children)
+    }
+    EDs <- mdply (.data = data.frame (sp = tips),
+                  .fun = calcSpecies,
+                  .progress = create_progress_bar (name = progress))
+    EDs
   }
-  calcSpecies <- function (sp) {
-    edges <- getEdges (tree, tips = as.character (sp), type = 2)
-    n.children = mdply (.data = data.frame (node = tree$edge[edges, 2]),
-                     .fun = countChildren)[ ,2]
-    sum (tree$edge.length[edges]/n.children)
+  calcPendantEdge <- function (tips) {
+    getEdgeLength <- function (sp) {
+      tip.index <- which (tree$tip.label == sp)
+      tip.edge <- which (tree$edge[, 2] == tip.index)
+      tree$edge.length[tip.edge]
+    }
+    mdply (.data = data.frame (sp = tips), .fun = getEdgeLength,
+           .progress = create_progress_bar (name = progress))
   }
   if (tips[1] == 'all') {
     tips <- tree$tip.label
   }
-  EDs <- mdply (.data = data.frame (sp = tips),
-                .fun = calcSpecies,
-                .progress = create_progress_bar (name = progress))
+  if (type == 'FP') {
+    EDs <- calcFairProportion (tips)
+  } else if (type == 'PE') {
+    EDs <- calcPendantEdge (tips)
+  } else {
+    stop (paste0 ('Type [', type, '] not known.
+                  Type must be either FP or PE'))
+  }
+  colnames (EDs)[2] <- 'ED'
   EDs
 }

@@ -17,9 +17,17 @@ test_that ('reduceTree([basic]) works', {
   expect_that (length (res$tip.label), equals (23))
 })
 
-test_that ('calcFairProportion([basic]) works', {
-  res <- calcFairProportion (catarrhines)
+test_that ('calcED(type = \'FP\') works', {
+  res <- calcED (catarrhines)
   # orangutan is the most distinct
+  most.distinct <-
+    as.character (res[which (res[ ,2] == max (res[ ,2])), 1])
+  expect_that ("Pongo pygmaeus", equals (most.distinct))
+})
+
+test_that ('calcED(type = \'PE\') works', {
+  res <- calcED (catarrhines, type = 'PE')
+  # orangutan is still the most distinct
   most.distinct <-
     as.character (res[which (res[ ,2] == max (res[ ,2])), 1])
   expect_that ("Pongo pygmaeus", equals (most.distinct))
