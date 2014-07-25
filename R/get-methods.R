@@ -37,6 +37,44 @@ getChildren <- function(tree, node, display = FALSE) {
   return (children)  
 }
 
+#' @name getSize
+#' @title Return the size of a phylogenetic tree
+#' @description Return either the number of tips, the total branch length
+#' or the root to tip distance of a phylogenetic tree
+#' @details I often need to quickly work out the size of a tree. This often means
+#' writing \code{length (tree$tip.label)} over and over... but with this function
+#' you can simply write \code{getSize(tree)}, that's a saving of 10 characters
+#' (no sniffing matter for the hard core programmer) plus it looks neater. Not
+#' to mention saving your brain time too, such as in this real world scenario:
+#' 
+#' 
+#' Oh how do I work how many tips a tree has? [pause -- thinking] Oh yeah I just need
+#' to get the length of the tip labels vector because a phylogenetic tree is just a list
+#' consisting of at least one character vector, one matrix and an integer. So, I just
+#' need to type \code{length(tree$tiplabels)}.... Hmmm why didn't that work? Oh yeah, I need
+#' to add a dot. So it shoud be \code{length(tree$tip.labels)}... WTH!? Why didn't that work?
+#' OK OK... let's think. [pause -- thinking] Let's just check the names of the tree slots ...
+#' \code{names(tree)}. Damnit why's tip labels singular?
+#' 
+#' 
+#' ... Well you get the idea.
+#' 
+#' @template base_template
+#' @param type type of size to be calcualted: \code{ntips} (default), total branch length
+#' \code{pd} or root to tip distance \code{rtt}
+#' @export
+
+getSize <- function (tree, type = c ('ntips', 'pd', 'rtt')) {
+  type = match.arg (type)
+  if (type == 'ntips') {
+    return (length (tree$tip.label))
+  } else if (type == 'pd') {
+    return (sum (tree$edge.length))
+  } else {
+    return (max (diag (vcv.phylo (tree))))
+  }
+}
+
 #' @name getAge
 #' @title Return age of node
 #' @description Return age of tip or internal node

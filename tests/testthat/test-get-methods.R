@@ -37,6 +37,15 @@ test_that ('getChildren([basic]) works',{
                throws_error ())
 })
 
+test_that ('getSize([basic]) works', {
+  expect_that (getSize (hominoids),
+               equals (length (hominoids$tip.label)))
+  expect_that (getSize (hominoids, type = 'pd'),
+               equals (sum (hominoids$edge.length)))
+  expect_that (getSize (hominoids, type = 'rtt'),
+               equals (max (diag (vcv.phylo (hominoids)))))
+})
+
 test_that ('getAge([basic]) works', {
   root.node <- length (hominoids$tip.label) + 1
   root.age <- getAge (hominoids, root.node)
