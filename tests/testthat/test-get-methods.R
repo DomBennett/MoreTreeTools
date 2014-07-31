@@ -99,3 +99,11 @@ test_that ('getNodeLabels([basic]) works', {
   expect_that (getNodeLabels (hominins.tree),
                is_equivalent_to (c ("Homininae", "Homininae", "Pan")))
 })
+
+test_that ('getClades([basic]) works', {
+  clade.trees <- getSubtrees (hominoids, 5, 10)
+  # should return two trees of 5 and 8
+  expect_that (getSize (clade.trees[[1]]), equals (5))
+  expect_that (getSize (clade.trees[[2]]), equals (8))
+  expect_that (length (clade.trees), equals (2))
+})
