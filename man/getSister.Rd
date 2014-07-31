@@ -2,7 +2,7 @@
 \alias{getSister}
 \title{Return sister node}
 \usage{
-getSister(tree, node)
+getSister(tree, node = "all")
 }
 \arguments{
   \item{tree}{phylogenetic tree (ape class)}
@@ -10,10 +10,13 @@ getSister(tree, node)
   \item{node}{number indicating node}
 }
 \description{
-Return sister node of node given
+Return sister node of node(s) given, default will return
+sister nodes of all internal nodes.
 }
 \details{
-No details
+A sister node is defined as the other node descending from
+the parent node. This functions finds all sister nodes. It
+does not handle polytomies.
 }
 \examples{
 # example.var <- exampleFun (test.data)

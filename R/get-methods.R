@@ -121,22 +121,40 @@ getAge <- function (tree, node = 'all') {
 
 #' @name getSister
 #' @title Return sister node
-#' @description Return sister node of node given
-#' @details No details
+#' @description Return sister node of node(s) given, default will
+#' return sister nodes of all internal nodes.
+#' @details A sister node is defined as the other node descending
+#' from the parent node. This functions finds all sister nodes.
+#' It does not handle polytomies.
 #' @template base_template
 #' @param node number indicating node
 #' @export
 #' @examples
 #' # example.var <- exampleFun (test.data)
 
-getSister <- function (tree, node) {
-  inner.node <- tree$edge[match(node, tree$edge[,2]),1]
-  # find all nodes and edges descending from inner node
-  d.edges <- which(tree$edge[,1] %in% inner.node)
-  d.nodes <- tree$edge[d.edges, 2]
-  # remove starting node
-  nearest.node <- d.nodes[!d.nodes %in% node][1]
-  nearest.node
+getSister <- function (tree, node = 'all') {
+  .getSister <- function (node) {
+    inner.node <- tree$edge[match(node, tree$edge[,2]),1]
+    # find all nodes and edges descending from inner node
+    d.edges <- which(tree$edge[,1] %in% inner.node)
+    d.nodes <- tree$edge[d.edges, 2]
+    # remove starting node
+    nearest.node <- d.nodes[!d.nodes %in% node][1]
+    nearest.node
+  }
+  if (node[1] == 'all') {
+    nodes <- (getSize (tree) + 2):(getSize (tree) + tree$Nnode)
+    res <- mdply (.data = data.frame (node = nodes),
+                  .fun = .getSister)
+    colnames (res)[2] <- 'sister'
+  } else if (length (node) > 1) {
+    res <- mdply (.data = data.frame (node = node),
+                  .fun = .getSister)
+    colnames (res)[2] <- 'sister'
+  } else {
+    res <- .getSister (node)
+  }
+  return (res)
 }
 
 #' @name getEdges
