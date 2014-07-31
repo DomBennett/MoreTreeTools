@@ -1,0 +1,40 @@
+\name{getSubtrees}
+\alias{getSubtrees}
+\title{Return non-redundant trees of clades from a phylogenetic tree}
+\usage{
+getSubtrees(tree, min.n, max.n)
+}
+\arguments{
+  \item{tree}{phylogenetic tree (ape class)}
+
+  \item{min.n}{the minimum number of tips to return for
+  each clade}
+
+  \item{max.n}{the maximum number of tips to return for
+  each clade}
+}
+\description{
+Extract subtrees from a phylogenetic tree within a
+specified range of number of tips, where each subtree
+returned has tips unique to it.
+}
+\details{
+This functions searches through all the nodes in a tree, it
+identifies all nodes that have numbers of descendents in
+the range specified by the user, it then returns the
+largest nodes for which all tips are unique to each
+subtree.
+}
+\examples{
+# example.var <- exampleFun (test.data)
+}
+\references{
+No references yet!
+\url{https://github.com/DomBennett/MoreTreeTools}.
+}
+\keyword{ecology}
+\keyword{evolution}
+\keyword{manipulation}
+\keyword{palaeontology}
+\keyword{phylogeny}
+
