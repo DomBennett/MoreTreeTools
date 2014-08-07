@@ -394,7 +394,8 @@ getSubtrees <- function (tree, min.n, max.n) {
   # loop through nodes writing info to children and n
   m_ply (.data = data.frame (node = nodes), .fun = countChildren)
   if (is.null (n)) {
-    stop ('No subtreess found between [', min.n,'] and [', max.n,']')
+    cat ('\nNo subtreess found between [', min.n,'] and [', max.n,']')
+    return (NULL)
   }
   # out of those clades, find a non-redundant combination
   # start with a bools matrix that records number of non-redudant
