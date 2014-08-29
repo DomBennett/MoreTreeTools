@@ -71,46 +71,71 @@ reduceTree <- function (tree, level, datasource = 4) {
 }
 
 #' @name calcED
-#' @title Calculate Evolutionary Distinctiveness (Fair Proportion or Pendant Edge)
-#' @description Calculate species evolutionary distinctiveness (ED) using either of two methods:
-#'  Fair Proportion (FP) or Pendant Edge (PE).
+#' @title Calculate Evolutionary Distinctiveness
+#' @description Calculate species evolutionary distinctiveness (ED) using one of three methods:
+#'  Fair Proportion (FP), Equal Splits (ES) or Pendant Edge (PE).
 #' @details Evolutionary distinctiveness is a measure of how much independent evolution a species
 #'  represents. Multiple methods exist for its calculation all of which require an ultrametric
 #'  phylogenetic tree. The methods used here are Pendant Edge (PE) the length of a species branch
-#'  that connects it to the tree (Altschul and Lipman, 1990) or Fair Proportion (FP) the total
+#'  that connects it to the tree (Altschul and Lipman, 1990), Fair Proportion (FP) the total
 #'  proportion of the phylogenetic tree that a species represents where each branch is equally
-#'  divided between all descdendants (Isaac et al. 2007).
+#'  divided between all descdendants (Isaac et al. 2007) and Equal Splits (ES) where branch lengths
+#'  are equally divided between descendents at every node in the tree (Redding and Mooers 2006)
 #'  
 #'  N.B. \code{picante} already has a function for doing this. \code{calcED}, however, uses \code{plyr}
-#'  vectorisation and should be faster.
+#'  vectorisation and is much faster.
 #' @template base_template
 #' @param tips vector of tips for which ED is calculated, else 'all'
-#' @param type method of ED calculation, either 'FP' or 'PE'
-#' @param progress bar showing the progress of the calculation. Either
-#' time, text, tk or none. Uses \code{plyr}'s \code{create_progress_bar}.
+#' @param type method of ED calculation, either 'all', 'FP', 'ES' or 'PE' (default FP)
 #' @references Isaac, N.J.B., Turvey, S.T., Collen, B., Waterman, C. and Baillie, J.E.M. (2007). 
 #'  Mammals on the EDGE: conservation priorities based on threat and phylogeny. PLoS ONE, 2, e296.
 #'  
 #'  Altschul, S., and Lipman, D. (1990). Equal animals. Nature.
+#'  
+#'  Redding, D. W., and Mooers, A. Ø. (2006). Incorporating evolutionary measures into conservation 
+#'  prioritization. Conservation Biology : The Journal of the Society for Conservation Biology, 
+#'  20(6), 1670–8.
 #' @export
 #' @examples
-#' # example.var <- exampleFun (test.data)
+#' #
 
-calcED <- function (tree, tips = 'all', type = 'FP', progress = 'none') {
+calcED <- function (tree, tips = 'all', type = 'FP') {
   calcFairProportion <- function (tips) {
-    countChildren <- function (node) {
-      length (getChildren (tree, node))
+    # first create an edge.matrix that will collect proportions of branch
+    #  per species
+    .calc <- function (node) {
+      # find all of node's children
+      children <- getChildren (tree, node)
+      # work out proportion of branch between all children
+      edge.length <- tree$edge.length[which (tree$edge[ ,2] == node)]
+      edge.length.share <- edge.length/length (children)
+      # fill in edge.matrix
+      edge.matrix[node, children] <<- edge.length.share
     }
-    calcSpecies <- function (sp) {
+    edge.matrix <- matrix (0, ncol = getSize (tree),
+                           nrow = tree$Nnode + getSize (tree))
+    colnames (edge.matrix) <- tree$tip.label
+    nodes <- 1:(getSize (tree) + tree$Nnode)
+    # remove root node
+    nodes <- nodes[-1 * (getSize (tree) + 1)]
+    m_ply (.data = data.frame (node = nodes), .fun = .calc)
+    res <- data.frame (FP = colSums (edge.matrix[ ,tips]))
+  }
+  calcEqualSplits <- function (tips) {
+    .calc <- function (sp) {
+      # find all edges that connect sp to root
       edges <- getEdges (tree, tips = as.character (sp), type = 2)
-      n.children = mdply (.data = data.frame (node = tree$edge[edges, 2]),
-                          .fun = countChildren)[ ,2]
-      sum (tree$edge.length[edges]/n.children)
+      # get all lengths and divide by the number of splits, from that node
+      res <- 0
+      for (i in length (edges):1) {
+        res <- res + tree$edge.length[edges[i]]/i
+      }
+      res
     }
-    EDs <- mdply (.data = data.frame (sp = tips),
-                  .fun = calcSpecies,
-                  .progress = create_progress_bar (name = progress))
-    EDs
+    res <- mdply (.data = data.frame (sp = tips), .fun = .calc)
+    res <- data.frame (ES = res[, 2])
+    rownames (res) <- tips
+    res
   }
   calcPendantEdge <- function (tips) {
     getEdgeLength <- function (sp) {
@@ -118,20 +143,30 @@ calcED <- function (tree, tips = 'all', type = 'FP', progress = 'none') {
       tip.edge <- which (tree$edge[, 2] == tip.index)
       tree$edge.length[tip.edge]
     }
-    mdply (.data = data.frame (sp = tips), .fun = getEdgeLength,
-           .progress = create_progress_bar (name = progress))
+    res <- mdply (.data = data.frame (sp = tips), .fun = getEdgeLength)
+    res <- data.frame (PE = res[, 2])
+    rownames (res) <- tips
+    res
   }
   if (tips[1] == 'all') {
     tips <- tree$tip.label
   }
+  if (type == 'all') {
+    FPs <- calcFairProportion (tips)
+    ESs <- calcEqualSplits (tips)
+    PEs <- calcPendantEdge (tips)
+    return (cbind (FPs, ESs, PEs))
+  }
   if (type == 'FP') {
     EDs <- calcFairProportion (tips)
+  } else if (type == 'ES') {
+    EDs <- calcEqualSplits (tips)
   } else if (type == 'PE') {
     EDs <- calcPendantEdge (tips)
   } else {
     stop (paste0 ('Type [', type, '] not known.
-                  Type must be either FP or PE'))
+                  Type must be either all, FP, ES or PE'))
   }
-  colnames (EDs)[2] <- 'ED'
+  colnames (EDs) <- 'ED'
   EDs
 }

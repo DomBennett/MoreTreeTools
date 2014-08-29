@@ -1,4 +1,4 @@
-## Test api tools
+## Test calc-methods
 ## D.J. Bennett
 ## 13/06/2014
 
@@ -21,7 +21,7 @@ test_that ('calcED(type = \'FP\') works', {
   res <- calcED (catarrhines)
   # orangutan is the most distinct
   most.distinct <-
-    as.character (res[which (res[ ,2] == max (res[ ,2])), 1])
+    as.character (rownames (res)[which (res[ ,1] == max (res[ ,1]))])
   expect_that ("Pongo pygmaeus", equals (most.distinct))
 })
 
@@ -29,6 +29,14 @@ test_that ('calcED(type = \'PE\') works', {
   res <- calcED (catarrhines, type = 'PE')
   # orangutan is still the most distinct
   most.distinct <-
-    as.character (res[which (res[ ,2] == max (res[ ,2])), 1])
+    as.character (rownames (res)[which (res[ ,1] == max (res[ ,1]))])
+  expect_that ("Pongo pygmaeus", equals (most.distinct))
+})
+
+test_that ('calcED(type = \'ES\') works', {
+  res <- calcED (catarrhines, type = 'ES')
+  # orangutan is still the most distinct
+  most.distinct <-
+    as.character (rownames (res)[which (res[ ,1] == max (res[ ,1]))])
   expect_that ("Pongo pygmaeus", equals (most.distinct))
 })

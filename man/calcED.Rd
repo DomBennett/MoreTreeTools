@@ -1,8 +1,8 @@
 \name{calcED}
 \alias{calcED}
-\title{Calculate Evolutionary Distinctiveness (Fair Proportion or Pendant Edge)}
+\title{Calculate Evolutionary Distinctiveness}
 \usage{
-calcED(tree, tips = "all", type = "FP", progress = "none")
+calcED(tree, tips = "all", type = "FP")
 }
 \arguments{
   \item{tree}{phylogenetic tree (ape class)}
@@ -10,17 +10,13 @@ calcED(tree, tips = "all", type = "FP", progress = "none")
   \item{tips}{vector of tips for which ED is calculated,
   else 'all'}
 
-  \item{type}{method of ED calculation, either 'FP' or
-  'PE'}
-
-  \item{progress}{bar showing the progress of the
-  calculation. Either time, text, tk or none. Uses
-  \code{plyr}'s \code{create_progress_bar}.}
+  \item{type}{method of ED calculation, either 'all', 'FP',
+  'ES' or 'PE' (default FP)}
 }
 \description{
 Calculate species evolutionary distinctiveness (ED) using
-either of two methods: Fair Proportion (FP) or Pendant Edge
-(PE).
+one of three methods: Fair Proportion (FP), Equal Splits
+(ES) or Pendant Edge (PE).
 }
 \details{
 Evolutionary distinctiveness is a measure of how much
@@ -28,17 +24,20 @@ independent evolution a species represents. Multiple
 methods exist for its calculation all of which require an
 ultrametric phylogenetic tree. The methods used here are
 Pendant Edge (PE) the length of a species branch that
-connects it to the tree (Altschul and Lipman, 1990) or Fair
+connects it to the tree (Altschul and Lipman, 1990), Fair
 Proportion (FP) the total proportion of the phylogenetic
 tree that a species represents where each branch is equally
-divided between all descdendants (Isaac et al. 2007).
+divided between all descdendants (Isaac et al. 2007) and
+Equal Splits (ES) where branch lengths are equally divided
+between descendents at every node in the tree (Redding and
+Mooers 2006)
 
 N.B. \code{picante} already has a function for doing this.
 \code{calcED}, however, uses \code{plyr} vectorisation and
-should be faster.
+is much faster.
 }
 \examples{
-# example.var <- exampleFun (test.data)
+#
 }
 \references{
 No references yet!
@@ -50,6 +49,11 @@ priorities based on threat and phylogeny. PLoS ONE, 2,
 e296.
 
 Altschul, S., and Lipman, D. (1990). Equal animals. Nature.
+
+Redding, D.W., and Mooers, A.O. (2006). Incorporating
+evolutionary measures into conservation prioritization.
+Conservation Biology : The Journal of the Society for
+Conservation Biology, 20(6), 1670–8.
 }
 \keyword{ecology}
 \keyword{evolution}
