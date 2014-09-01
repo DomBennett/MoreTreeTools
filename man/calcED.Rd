@@ -50,7 +50,7 @@ e296.
 
 Altschul, S., and Lipman, D. (1990). Equal animals. Nature.
 
-Redding, D.W., and Mooers, A.O. (2006). Incorporating
+Redding, D. W., and Mooers, A. Ø. (2006). Incorporating
 evolutionary measures into conservation prioritization.
 Conservation Biology : The Journal of the Society for
 Conservation Biology, 20(6), 1670–8.
