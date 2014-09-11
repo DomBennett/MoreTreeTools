@@ -393,6 +393,8 @@ getSubtrees <- function (tree, min.n, max.n, verbose = FALSE) {
     if (verbose) {
       cat (paste0 ('\nTree already within min and max n'))
     }
+    tree <- list (tree)
+    class (tree) <- 'multiPhylo'
     return (tree)
   }
   # create a list for tip names for each clade
@@ -410,7 +412,10 @@ getSubtrees <- function (tree, min.n, max.n, verbose = FALSE) {
   }
   if (length (children) == 1) {
     # if length is 1, then only one clade matched
-    return (extract.clade (tree, node = node.number))
+    tree <- extract.clade (tree, node = node.number)
+    tree <- list (tree)
+    class (tree) <- 'multiPhylo'
+    return (tree)
   }
   # out of those clades, find a non-redundant combination
   this <- 1
