@@ -2,7 +2,7 @@
 \alias{getSubtrees}
 \title{Return non-redundant trees of clades from a phylogenetic tree}
 \usage{
-getSubtrees(tree, min.n, max.n)
+getSubtrees(tree, min.n, max.n, verbose = FALSE)
 }
 \arguments{
   \item{tree}{phylogenetic tree (ape class)}
@@ -12,6 +12,8 @@ getSubtrees(tree, min.n, max.n)
 
   \item{max.n}{the maximum number of tips to return for
   each clade}
+
+  \item{verbose}{true or false}
 }
 \description{
 Extract subtrees from a phylogenetic tree within a

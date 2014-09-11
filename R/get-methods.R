@@ -364,73 +364,81 @@ getNodeLabels <- function (tree, all = FALSE, datasource = 4) {
 #' @template base_template
 #' @param min.n the minimum number of tips to return for each clade
 #' @param max.n the maximum number of tips to return for each clade
+#' @param verbose true or false
 #' @export
 #' @examples
 #' # example.var <- exampleFun (test.data)
 
-getSubtrees <- function (tree, min.n, max.n) {
-    countChildren <- function (node) {
-      # add node information to lists children and n
-      these.children <- getChildren (tree, node)
-      this.n <- length (these.children)
-      if (this.n <= max.n & this.n >= min.n) {
-        children <<- c (children, list (these.children))
-        n <<- c (n, this.n)
-        node.number <<- c (node.number, node)
-      }
-    }
-    checkNode <- function (i, these.names) {
-      # return True if names do not overlap
-      those.names <- children[[i]]
-      !any (these.names %in% those.names)
-    }
-    # how many nodes to loop through
-    ntips <- getSize (tree)
-    nodes <- (ntips + 1):(ntips + tree$Nnode)
-    # create a list for tip names for each clade
-    children <- list ()
-    # create a vector of n tips and node number for each clade
-    n <- node.number <- NULL
-    # loop through nodes writing info to children and n
-    m_ply (.data = data.frame (node = nodes), .fun = countChildren)
-    if (is.null (n)) {
-      cat (paste0 ('\nNo subtreess found between [', min.n,'] and [', max.n,']'))
-      return (NULL)
-    }
-    if (length (children) == 1) {
-      # if length is 1, then only one clade matched
-      return (extract.clade (tree, node = node.number))
-    }
-    # out of those clades, find a non-redundant combination
-    this <- 1
-    while (this <= length (n)) {
-      # work out overlap between this node and other nodes
-      those <- (1:length (n))[-this]
-      these.names <- children[[this]]
-      bool <- mdply (.data = data.frame (i = those), .fun = checkNode,
-                     these.names)[ ,2]
-      # if this node's n is greater than its overlapping 'those nodes' keep,
-      #  else drop
-      this.n <- n[this]
-      these.n <- n[those[!bool]]
-      if (any (this.n <= these.n)) {
-        n <- n[-this]
-        children <- children[-this]
-        node.number <- node.number[-this]
-      } else {
-        this <- this + 1
-      }
-    }
-    # extract clades and return as trees
-    trees <- list ()
-    for (each in node.number) {
-      clade.tree <- extract.clade (tree, node = each)
-      trees <- c (trees, list (clade.tree))
-    }
-    if (length (trees) > 1) {
-      class (trees) <- 'multiPhylo'
-      return (trees)
-    } else {
-      return (trees[[1]])
+getSubtrees <- function (tree, min.n, max.n, verbose = FALSE) {
+  countChildren <- function (node) {
+    # add node information to lists children and n
+    these.children <- getChildren (tree, node)
+    this.n <- length (these.children)
+    if (this.n <= max.n & this.n >= min.n) {
+      children <<- c (children, list (these.children))
+      n <<- c (n, this.n)
+      node.number <<- c (node.number, node)
     }
   }
+  checkNode <- function (i, these.names) {
+    # return True if names do not overlap
+    those.names <- children[[i]]
+    !any (these.names %in% those.names)
+  }
+  # how many nodes to loop through
+  ntips <- getSize (tree)
+  nodes <- (ntips + 1):(ntips + tree$Nnode)
+  # quick return if it's already right size
+  if (ntips <= max.n && ntips >= min.n) {
+    if (verbose) {
+      cat (paste0 ('\nTree already within min and max n'))
+    }
+    return (tree)
+  }
+  # create a list for tip names for each clade
+  children <- list ()
+  # create a vector of n tips and node number for each clade
+  n <- node.number <- NULL
+  # loop through nodes writing info to children and n
+  m_ply (.data = data.frame (node = nodes), .fun = countChildren)
+  if (is.null (n)) {
+    if (verbose) {
+      cat (paste0 ('\nNo subtreess found between [', min.n,
+                   '] and [', max.n,']'))
+    }
+    return (NULL)
+  }
+  if (length (children) == 1) {
+    # if length is 1, then only one clade matched
+    return (extract.clade (tree, node = node.number))
+  }
+  # out of those clades, find a non-redundant combination
+  this <- 1
+  while (this <= length (n)) {
+    # work out overlap between this node and other nodes
+    those <- (1:length (n))[-this]
+    these.names <- children[[this]]
+    bool <- mdply (.data = data.frame (i = those), .fun = checkNode,
+                   these.names)[ ,2]
+    # if this node's n is greater than its overlapping 'those nodes' keep,
+    #  else drop
+    this.n <- n[this]
+    these.n <- n[those[!bool]]
+    if (any (this.n <= these.n)) {
+      n <- n[-this]
+      children <- children[-this]
+      node.number <- node.number[-this]
+    } else {
+      this <- this + 1
+    }
+  }
+  # extract clades and return as trees
+  trees <- list ()
+  for (each in node.number) {
+    clade.tree <- extract.clade (tree, node = each)
+    trees <- c (trees, list (clade.tree))
+  }
+  # return as multiPhylo
+  class (trees) <- 'multiPhylo'
+  return (trees)
+}
