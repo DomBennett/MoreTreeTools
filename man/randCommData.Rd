@@ -1,0 +1,34 @@
+\name{randCommData}
+\alias{randCommData}
+\title{Generate Random Community Data Based on Community Phylogeny}
+\usage{
+randCommData(tree, nsites, nspp, lam = NULL)
+}
+\arguments{
+  \item{tree}{phylogenetic tree (ape class)}
+
+  \item{nsites}{the number of sites}
+
+  \item{the}{total number of species for each site}
+
+  \item{lambda}{for Poisson distribution (default NULL for
+  incidences)}
+}
+\description{
+Generate a community matrix based on a phylogeny without
+phylogenetic signal.
+}
+\details{
+The default is to generate incidences, but if \code{lam} is
+numeric will generate using lam as lambda.
+}
+\references{
+No references yet!
+\url{https://github.com/DomBennett/MoreTreeTools}.
+}
+\keyword{ecology}
+\keyword{evolution}
+\keyword{manipulation}
+\keyword{palaeontology}
+\keyword{phylogeny}
+

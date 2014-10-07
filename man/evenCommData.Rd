@@ -1,0 +1,33 @@
+\name{evenCommData}
+\alias{evenCommData}
+\title{Generate Evenly Distributed Data Based on Community Phylogeny}
+\usage{
+evenCommData(tree, nsites, nspp)
+}
+\arguments{
+  \item{tree}{phylogenetic tree (ape class)}
+
+  \item{nsites}{number of sites}
+
+  \item{nspp}{number of species}
+}
+\description{
+Generate a community matrix based on a phylogeny with
+phylogenetic signal.
+}
+\details{
+Generate evenly distributed community phylogenetic data
+based on a phylogeny. Takes the phylogeny, calculates
+cummulative PD from random taxon, cuts at even intervals
+based on nspp to maximise distance.
+}
+\references{
+No references yet!
+\url{https://github.com/DomBennett/MoreTreeTools}.
+}
+\keyword{ecology}
+\keyword{evolution}
+\keyword{manipulation}
+\keyword{palaeontology}
+\keyword{phylogeny}
+

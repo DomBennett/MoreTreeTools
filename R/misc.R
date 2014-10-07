@@ -1,3 +1,20 @@
+.split0 <- function(r = c(1, 10) , n = 2) {
+  # evenly split a range into n
+  #
+  # args:
+  # r: range to be split, must be numerical, can be vector.
+  # n: times to split r
+  #
+  # returns a vector of splits
+  output <- rep(NA, n)
+  output[1] <- 0
+  division <- 1/(n-1)
+  for (i in 2:n) {
+    output[i] <- output[i-1] + division
+  }
+  return(round((output * (max(r) - min(r))) + min(r)))
+}
+
 .findClade <- function (lineages) {
   # for a list of lineages, find the clade shared by all
   subj <- lineages[[1]]

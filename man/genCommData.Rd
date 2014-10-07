@@ -1,0 +1,46 @@
+\name{genCommData}
+\alias{genCommData}
+\title{Generate Clustered/Overdispersed Data Based on Community Phylogeny}
+\usage{
+genCommData(tree, focal, psi = 1, mean.incid, mean.abun = FALSE,
+  nsites = 1)
+}
+\arguments{
+  \item{tree}{phylogenetic tree (ape class)}
+
+  \item{focal}{numeric index, indicating which tip to
+  perform cluster/dispersion}
+
+  \item{psi}{scaling coefficient: larger the number the
+  more pronounced the effect by a power law (hence 0 not
+  allowed)}
+
+  \item{mean.incid}{the mean incidence of species in the
+  community}
+
+  \item{mean.abun}{the mean abundance per site, if given
+  output will be abundances}
+
+  \item{nsites}{number of sites}
+}
+\description{
+Generate a community matrix based on a phylogeny with
+phylogenetic signal.
+}
+\details{
+Abundances/incidences for a commuity are generated
+clustering around a focal point in the phylogeny
+(clustering \code{psi} > 0) or diserpsing around a focal
+point (overdispersion \code{psi} < 0). Return either
+incidence or abundance data.
+}
+\references{
+No references yet!
+\url{https://github.com/DomBennett/MoreTreeTools}.
+}
+\keyword{ecology}
+\keyword{evolution}
+\keyword{manipulation}
+\keyword{palaeontology}
+\keyword{phylogeny}
+

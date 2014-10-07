@@ -170,3 +170,126 @@ calcED <- function (tree, tips = 'all', type = 'FP') {
   colnames (EDs) <- 'ED'
   EDs
 }
+
+#' @name randCommData
+#' @title Generate Random Community Data Based on Community Phylogeny
+#' @description Generate a community matrix based on a phylogeny without phylogenetic signal.
+#' @details The default is to generate incidences, but if \code{lam} is numeric will
+#' generate using lam as lambda.
+#' @template base_template
+#' @param nsites the number of sites
+#' @param the total number of species for each site
+#' @param lambda for Poisson distribution (default NULL for incidences)
+
+randCommData <- function (tree, nsites, nspp, lam = NULL) {
+  ## TODO: write test
+  ntips <- length (tree$tip.label)
+  output <- matrix (rep(NA, ntips * nsites),
+                   ncol = ntips, nrow = nsites)
+  colnames (output) <- tree$tip.label
+  if (is.null (lam)) {
+    for (i in 1:nsites) {
+      output[i, ] <- sample (c (rep (1, nspp), rep (0, ntips - nspp)))
+    }
+  } else {
+    for (i in 1:nsites) {
+      output[i, ] <- sample (rpois (ntips, lam))
+    }
+  }
+  output
+}
+
+#' @name genCommData
+#' @title Generate Clustered/Overdispersed Data Based on Community Phylogeny
+#' @description Generate a community matrix based on a phylogeny with phylogenetic signal.
+#' @details Abundances/incidences for a commuity are generated clustering around a focal
+#'  point in the phylogeny (clustering \code{psi} > 0) or diserpsing around a focal point
+#'  (overdispersion \code{psi} < 0). Return either incidence or abundance data.
+#' @template base_template
+#' @param focal numeric index, indicating which tip to perform cluster/dispersion
+#' @param psi scaling coefficient: larger the number the more pronounced the
+#' effect by a power law (hence 0 not allowed)
+#' @param mean.incid the mean incidence of species in the community
+#' @param mean.abun the mean abundance per site, if given output will be abundances
+#' @param nsites number of sites
+
+genCommData <- function(tree, focal, psi = 1, mean.incid, mean.abun = FALSE,
+                        nsites = 1) {
+  ##TODO: write test
+  invertVector <- function(dists) {
+    # for reversing the probs for overdispersion
+    u <- sort(unique(dists), TRUE)
+    s <- sort(u)
+    probs <- rep(NA, length(dists))
+    for (i in 1:length(u)) {
+      probs[u[i] == dists] <- s[i]
+    }
+    return (probs)
+  }
+  genAbuns <- function(row) {
+    # for generating abundances for each row
+    out.row <- rep(0, ntips)
+    temp.probs <- probs
+    temp.probs[row < 1] <- 0
+    abundance <- abs(ceiling(rnorm(1, mean = mean.abun)))
+    if (abundance == 0) {
+      return (out.row)
+    } else {
+      abuns <- sample(1:ntips, abundance, prob = temp.probs, replace = TRUE)
+      abuns <- table(abuns)
+      out.row[as.numeric(names(abuns))] <- abuns
+      return (out.row)
+    }
+  }
+  ntips <- length(tree$tip.label)
+  output <- matrix(rep(NA, ntips * nsites),
+                   ncol = ntips, nrow = nsites)
+  colnames(output) <- tree$tip.label
+  pd.dists <- cophenetic.phylo(tree)
+  focal.dists <- pd.dists[ , focal] + 1 # avoid 0
+  if (psi > 0) focal.dists <- invertVector(focal.dists)
+  probs <- focal.dists^abs(psi)
+  probs <- probs/sum(probs)
+  for (i in 1:nsites) {
+    incidence <- abs(ceiling(rnorm(1, mean = mean.incid))) # avoid negative numbers
+    output[i, ] <- ifelse(1:ntips %in% sample(1:ntips, incidence,
+                                              prob = probs), 1, 0)
+  }
+  if (mean.abun != FALSE) {
+    for (i in 1:nsites) {
+      output[i, ] <- genAbuns(output[i, ])
+    }
+  }
+  return (output)
+}
+
+#' @name evenCommData
+#' @title Generate Evenly Distributed Data Based on Community Phylogeny
+#' @description Generate a community matrix based on a phylogeny with phylogenetic signal.
+#' @details Generate evenly distributed community phylogenetic data based on a
+#' phylogeny. Takes the phylogeny, calculates cummulative PD from random
+#' taxon, cuts at even intervals based on nspp to maximise distance.
+#' @template base_template
+#' @param nsites number of sites
+#' @param nspp number of species
+
+evenCommData <- function(tree, nsites, nspp) {
+  ## TODO: write test
+  ntips <- length(tree$tip.label)
+  output <- matrix(rep(0, ntips * nsites),
+                   ncol = ntips, nrow = nsites)
+  colnames(output) <- tree$tip.label
+  pd.dists <- cophenetic.phylo(tree)
+  for (i in 1:nsites) {
+    focal.pd.dists <- pd.dists[ , sample(1:ntips, 1)]
+    # select focal taxon at random
+    splits <- split0(1:sum(focal.pd.dists), nspp)
+    cumsum.pd.dists <- cumsum(focal.pd.dists)
+    for (j in 1:nspp) {
+      pull <- which(abs(cumsum.pd.dists - splits[j])
+                    == min(abs(cumsum.pd.dists - splits[j])))
+      output[i, pull] <- 1
+    }
+  }
+  return(output)
+}
