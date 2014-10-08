@@ -283,7 +283,7 @@ evenCommData <- function(tree, nsites, nspp) {
   for (i in 1:nsites) {
     focal.pd.dists <- pd.dists[ , sample(1:ntips, 1)]
     # select focal taxon at random
-    splits <- split0(1:sum(focal.pd.dists), nspp)
+    splits <- .split0(1:sum(focal.pd.dists), nspp)
     cumsum.pd.dists <- cumsum(focal.pd.dists)
     for (j in 1:nspp) {
       pull <- which(abs(cumsum.pd.dists - splits[j])

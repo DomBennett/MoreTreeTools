@@ -14,7 +14,7 @@
   stop ("Failed to connect, server may be down.")
 }
 
-.taxaResolve <- function (names, batch = 100, datasource = 4){
+taxaResolve <- function (names, batch = 100, datasource = 4){
   # Resolve taxonomic names via the Global Names Resolver.
   #  Names that cannot be resolved are returned as NA.
   #
