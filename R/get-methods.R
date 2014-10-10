@@ -325,7 +325,7 @@ getNodeLabels <- function (tree, all = FALSE, datasource = 4) {
   # Use GNR to label all nodes in a phylogeny
   # first replace all _ with spaces
   tree$tip.label <- gsub ('_', ' ', tree$tip.label)
-  taxa.res <- .taxaResolve (tree$tip.label, datasource = datasource)
+  taxa.res <- taxaResolve (tree$tip.label, datasource = datasource)
   nodes <- 1:(length (tree$tip.label) + tree$Nnode)
   node.label <- rep (NA, length (nodes))
   # for tips use the first word of the name
