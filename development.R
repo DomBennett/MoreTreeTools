@@ -54,10 +54,10 @@ blockPlot <- function (tree, trait, title = NULL) {
 }
 
 ## Plotting phylogenetic signal
-tree <- compute.brlen (stree (128, 'balanced'))
-rtrait <- randCommData (tree, nsites = 1, nspp = 64)[1, ]
-blockPlot (tree, rtrait, 'Random')
-etrait <- evenCommData (tree, nsites = 1, nspp = 63)[1, ]
+tree <- compute.brlen (rtree (100))
+trait <- randCommData (tree, nsites = 1, nspp = 25)[1, ]
+blockPlot (tree, trait, 'Random')
+etrait <- evenCommData (tree, nsites = 1, nspp = 50)[1, ]
 blockPlot (tree, etrait, 'Even')
 ctrait1 <- genCommData (tree, focal = sample (1:getSize (tree), 1),
                       psi = 100, mean.incid = 5)[1, ]
