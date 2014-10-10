@@ -1,4 +1,5 @@
 import (methods)
+import (ggplot2)
 import (ape)
 import (plyr)
 importFrom (RJSONIO, fromJSON)
