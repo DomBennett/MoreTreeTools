@@ -15,69 +15,117 @@
 #' trait <- c (rep (1, 8), rep (0, 8))
 #' names (trait) <- tree$tip.label
 #' # Plot blocks ...
-#' blockplot (tree, trait, 'Perfect signal')
+#' blockplot (tree, trait, title = 'Perfect signal', gradient = TRUE)
 #' # Repeat with evenly distributed traits ...
 #' trait <- rep (c (0, 1), 8)
 #' names (trait) <- tree$tip.label
-#' blockplot (tree, trait, 'Maximally overdispered')
+#' blockplot (tree, trait, gradient = TRUE, title = 'Maximally overdispered')
 #' # The more evenly distributed, the more symetrical
 #' # the pattern
 #' # A random distribution of traits ...
 #' trait <- randCommData (tree, nsites = 1, nspp = 8)[1, ]
-#' blockplot (tree, trait, 'Random trait')
+#' blockplot (tree, trait, title = 'Random trait', gradient = TRUE)
 #' # ... isn't as symetrical
 
-blockplot <- function (tree, trait, title = NULL) {
+blockplot <- function (tree, trait, gradient = TRUE,
+                       title = NULL) {
+  .byTraitType <- function (i) {
+    # calculate proportion of trait per edge
+    .byEdge <- function (i, trait.type.names) {
+      sum (trait.type.names %in% children.by.edge[[i]]) /
+        length (children.by.edge[[i]])
+    }
+    trait.type.names <- names (trait)[
+      trait == trait.types[i]]
+    res <- mdply (.data = data.frame (i = 1:length (
+      children.by.edge)), .fun = .byEdge,
+      trait.type.names)[ ,2]
+    res * tree$edge.length
+  }
+  .byTip <- function (i) {
+    # calculate blocks for each tip
+    .eachTip <- function (j) {
+      ord <- order (temp[ ,j], decreasing = TRUE)
+      data.frame (trait = rownames (temp)[ord],
+                  p.trait = temp[ord, j], tip,
+                  edges = edges[j])
+    }
+    tip <- tree$tip.label[i]
+    edges <- getEdges (tree, tips = tip, type = 2)
+    temp <- edge.mappings[tree$edge[, 2] %in%
+                            tree$edge[edges, 2]]
+    res <- mdply (.data = data.frame (
+      j = 1:length (temp)), .fun = .eachTip)[ ,-1]
+    res$y2 <- cumsum (res$p.trait)
+    res$y1 <- c (0, res$y2[-nrow (res)])
+    res$x1 <- x1[i]
+    res$x2 <- x2[i]
+    res
+  }
+  .forGradient <- function (i) {
+    # merge separate blocks of different traits, into one
+    .byEdge <- function (j) {
+      edge.data <- tip.data[tip.data$edges ==
+                              unique (tip.data$edges)[j], ]
+      # p.trait is now the proportion of what trait it reps
+      #  between -1 and +1
+      p.trait <- (edge.data$p.trait[edge.data$trait == 1] -
+        edge.data$p.trait[edge.data$trait == 2]) /
+        sum (edge.data$p.trait)
+      y1 <- edge.data$y1[1]
+      y2 <- edge.data$y2[2]
+      x1 <- edge.data$x1[1]
+      x2 <- edge.data$x2[2]
+      edges <- edge.data$edges[1]
+      tip <- edge.data$tip[1]
+      data.frame (p.trait, edges, x1, x2, y1, y2)
+    }
+    tip.data <- rectcoords[rectcoords$tip == unique (
+      rectcoords$tip)[i], ]
+    mdply (.data = data.frame (j = 1:length (
+      unique (tip.data$edges))), .fun = .byEdge)[ ,-1]
+  }
+  # 1/calc FP -- needed to determine width of bar for each tip
+  # low FP, means larger width
+  x2 <- cumsum (1/calcED (tree)[ ,1])
+  x1 <- c (0, x2[-length (x2)])
   # get tips descending from each edge (or more precisely the
   #  terminal node of each edge)
   children.by.edge <- mlply (.data = data.frame (
     node = tree$edge[ ,2]), .fun = getChildren, tree)
-  .byEdge <- function (i, trait.type.names) {
-    sum (trait.type.names %in% children.by.edge[[i]])
-  }
-  .byTraitType <- function (i) {
-    trait.type.names <- names (trait)[trait ==
-                                        trait.types[i]]
-    res <- mdply (.data = data.frame (i = 1:length (
-      children.by.edge)), .fun = .byEdge, trait.type.names)[ ,2]
-    res * tree$edge.length
-  }
   # get proportion of edge.length of each trait based on FP
   trait.types <- unique (trait)
   edge.mappings <- mdply (.data = data.frame (
     i = 1:length (trait.types)), .fun = .byTraitType)[ ,-1]
   colnames (edge.mappings) <- tree$edge[, 2]
-  .byTip <- function (x) {
-    tip <- tree$tip.label[x]
-    edges <- getEdges (tree, tips = tip, type = 2)
-    temp <- edge.mappings[tree$edge[, 2] %in%
-                            tree$edge[edges, 2]]
-    .eachTip <- function (i) {
-      ord <- order (temp[ ,i], decreasing = TRUE)
-      data.frame (trait = rownames (temp)[ord],
-                  p.trait = temp[ord, i], tip,
-                  edges = rep (edges, each = 2))
-    }
-    res <- mdply (.data = data.frame (
-      i = 1:length (temp)), .fun = .eachTip)[ ,-1]
-    res <- res[res$p.trait != 0, ]
-    res$y2 <- cumsum (res$p.trait)
-    res$y1 <- c (0, res$y2[-nrow (res)])
-    res
-  }
   # for each tip, find all its edges, stick together
   #  into a single data.frame for geom_rect ()
   # geom_rect () requires xy coordinates
-  res <- mdply (.data = data.frame (
-    x = 1:getSize (tree)), .fun = .byTip)
-  p <- ggplot (res, aes (xmin = y1, xmax = y2,
-                        ymin = x, ymax = x + 1,
-                        fill = trait)) +
-    geom_rect () + theme (line = element_blank (),
-                         line = element_blank (),
-                         axis.text = element_blank (),
-                         panel.background = element_blank (),
-                         legend.position = 'none')
+  rectcoords <- mdply (.data = data.frame (
+    i = 1:getSize (tree)), .fun = .byTip)
+  if (gradient & length (trait.types) == 2) {
+    # if gradient, merge p.trait for each edge for
+    #  each tip
+    rectcoords <- mdply (.data = data.frame (
+      i = 1:length (unique (rectcoords$tip))),
+      .fun = .forGradient)[ ,-1]
+    p <- ggplot (rectcoords, aes (xmin = y1, xmax = y2,
+                                  ymin = x1, ymax = x2)) +
+                   geom_rect (aes (fill = p.trait)) +
+      scale_fill_gradient2 (low = "red", high = "blue")
+  } else {
+    rectcoords <- rectcoords[rectcoords$p.trait != 0, ]
+    p <- ggplot (rectcoords, aes (xmin = y1, xmax = y2,
+                                  ymin = x1, ymax = x2,
+                                  fill = trait)) +
+      geom_rect ()
+  }
+  # plot
+  p <- p + theme (line = element_blank (),
+                  line = element_blank (),
+                  axis.text = element_blank (),
+                  panel.background = element_blank (),
+                  legend.position = 'none')
   if (!is.null (title)) {
     print (p + ggtitle (title))
   } else {
