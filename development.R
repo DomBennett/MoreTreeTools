@@ -1,6 +1,7 @@
 ## D.J Bennett
 ## Testing out new ideas
 
+library (MoreTreeTools)
 ## Plotting phylogenetic signal
 tree <- compute.brlen (rtree (100))
 trait <- randCommData (tree, nsites = 1, nspp = 25)[1, ]
