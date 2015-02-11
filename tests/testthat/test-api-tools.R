@@ -19,10 +19,10 @@ test_that ('.safeFromJSON([basic]) works', {
       url = 'dummyaddress', max.trys = 0), throws_error ())
 })
 
-test_that ('.taxaResolve([basic]) works', {
+test_that ('taxaResolve([basic]) works', {
   test.names <- c (hominoids, 'thisisnotaname')
   expected.dimensions <- c (17, 10)
-  res <- MoreTreeTools:::.taxaResolve (test.names)
+  res <- MoreTreeTools:::taxaResolve (test.names)
   res <- res[complete.cases (res), ]
   expect_that (dim (res), equals (expected.dimensions))
 })
