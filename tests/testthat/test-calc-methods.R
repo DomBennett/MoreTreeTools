@@ -40,3 +40,18 @@ test_that ('calcED(type = \'ES\') works', {
     as.character (rownames (res)[which (res[ ,1] == max (res[ ,1]))])
   expect_that ("Pongo pygmaeus", equals (most.distinct))
 })
+test_that ('calcDist([basic]) works', {
+  tree1 <- compute.brlen (stree (10, 'left'))
+  tree2 <- compute.brlen (stree (10, 'left'))
+  distances <- calcDist (tree1, tree2)
+  # trees are identical
+  expect_that (0, equals (distances[['PH85']]))
+  expect_that (0, equals (distances[['score']]))
+  expect_that (0, equals (distances[['dmat']]))
+  # rearrange to be maximally distant
+  tree1$tip.label <- tree1$tip.label[c (10,2,8,4,6,5,7,3,9,1)]
+  distances <- calcDist (tree1, tree2)
+  expect_that (1, equals (distances[['PH85']]))
+  expect_that (1, equals (distances[['score']]))
+  expect_that (0.6516854, equals (distances[['dmat']]))  # max for 10 tips
+})
