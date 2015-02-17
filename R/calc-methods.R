@@ -326,9 +326,16 @@ calcDist <- function (tree1, tree2, method = c ('all', 'PH85', 'score', 'dmat'),
     d
   }
   calcScore <- function (tree1, tree2) {
+    # If either have no lengths, return NA
+    if (is.null (tree1$edge.length) | is.null (tree2$edge.length)) {
+      return (NA)
+    }
     # dist.topo assumes trees are unrooted
     tree1 <- unroot (tree1)
     tree2 <- unroot (tree2)
+    # rescale branch lengths
+    tree1$edge.length <- tree1$edge.length/sum (tree1$edge.length)
+    tree2$edge.length <- tree2$edge.length/sum (tree2$edge.length)
     # get distance
     d <- dist.topo (tree1, tree2, method = 'score')
     if (normalised) {
@@ -345,6 +352,10 @@ calcDist <- function (tree1, tree2, method = c ('all', 'PH85', 'score', 'dmat'),
     d
   }
   calcDmat <- function (tree1, tree2) {
+    # If either have no lengths, return NA
+    if (is.null (tree1$edge.length) | is.null (tree2$edge.length)) {
+      return (NA)
+    }
     # get tip distances
     dist1 <- cophenetic.phylo (tree1)
     dist2 <- cophenetic.phylo (tree2)
@@ -371,9 +382,6 @@ calcDist <- function (tree1, tree2, method = c ('all', 'PH85', 'score', 'dmat'),
   if (method == 'PH85') {
     return (calcPH85 (tree1, tree2))
   }
-  # rescale branch lengths
-  tree1$edge.length <- tree1$edge.length/sum (tree1$edge.length)
-  tree2$edge.length <- tree2$edge.length/sum (tree2$edge.length)
   if (method == 'score') {
     return (calcScore (tree1, tree2))
   }
