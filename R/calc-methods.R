@@ -70,6 +70,93 @@ reduceTree <- function (tree, level, datasource = 4) {
   tree
 }
 
+#' @name calcComPhyMets
+#' @title Calculate Community Phylogenetic Metrics
+#' @description One-stop function for calculating a range of community phylogenetic metrics
+#' from tree and community matrix.
+#' @details Metrics calculated: PD (types 1, 2 and 3), PSV, PSD, PSE, PSC, and PSR.
+#' The PD metric in this function has 3 different types:
+#'  PD1: considers the case if all other taxa from the phylogeny are dropped. In this
+#'  way, type 1 is context independent but has a minimum number of taxa of 2. (This is
+#'  the normal PD.)
+#'  PD2: sums the lengths of all the edges connecting the specified taxa to the terminal node.
+#'  PD3: sums the lengths of all the edges represented uniquely by the specified taxa.
+#' @template base_template
+#' @param cmatrix community/trait data matrix (cols taxa, rows sites)
+#' @param metric what metric to use as vector, default all metrics
+#' @param min.spp minimum number of species at site, default 2
+#' @references Faith, D. (1992). Conservation evaluation and phylogenetic diversity.
+#'  Biological Conservation, 61, 1–10.
+#'
+#' Helmus M.R., Bland T.J., Williams C.K. & Ives A.R. (2007) Phylogenetic measures of
+#'  biodiversity. American Naturalist, 169, E68-E83
+#'  @examples
+#'  data (catarrhines)
+#'  cmatrix <- randCommData (catarrhines, nsites=20, nspp=10)
+#'  res <- calcComPhyMets (cmatrix, catarrhines)
+#'  print (res)
+
+calcComPhyMets <- function(cmatrix, tree, min.spp = 2,
+                           metrics = c ('PD1', 'PD2', 'PD3', 'PSV',
+                                     'PSD', 'PSE', 'PSC')) {
+  calcPD <- function (i, type) {
+    # get tips present in this site
+    tips <- colnames (cmatrix)[cmatrix[i, ] > 0]
+    if (length (tips) <= min.spp) {
+      return (NA)
+    }
+    # get edges given type
+    edges <- getEdges (tree, tips=tips, type=type)
+    sum (tree$edge.length[edges])
+  }
+  if ('PD1' %in% metrics & min.spp < 2) {
+    stop("Cannot compute type 1 PD for fewer than 2 species")
+  }
+  # add site names if none
+  if (is.null (rownames (cmatrix))) {
+    rownames (cmatrix) <- paste0 ('site_', 1:nrow (cmatrix))
+  }
+  # init res data.frame
+  res <- data.frame ('Site'=rownames (cmatrix))
+  # calc each metric and add to res
+  if ('PD1' %in% metrics) {
+    temp <- mdply (.data = data.frame (i = 1:nrow (cmatrix)),
+                   .fun = calcPD, type=1)[ ,2]
+    res <- data.frame (res, 'PD1'=temp)
+  }
+  if ('PD2' %in% metrics) {
+    temp <- mdply (.data = data.frame (i = 1:nrow (cmatrix)),
+                   .fun = calcPD, type=2)[ ,2]
+    res <- data.frame (res, 'PD2'=temp)
+  }
+  if ('PD3' %in% metrics) {
+    temp <- mdply (.data = data.frame (i = 1:nrow (cmatrix)),
+                   .fun = calcPD, type=3)[ ,2]
+    res <- data.frame (res, 'PD3'=temp)
+  }
+  if ('PSV' %in% metrics) {
+    temp <- psv (samp=cmatrix, tree=tree)[ ,1]
+    res <- data.frame (res, 'PSV'=temp)
+  }
+  if ('PSR' %in% metrics) {
+    temp <- psr (samp=cmatrix, tree=tree)[ ,1]
+    res <- data.frame (res, 'PSR'=temp)
+  }
+  if ('PSE' %in% metrics) {
+    temp <- pse (samp=cmatrix, tree=tree)[ ,1]
+    res <- data.frame (res, 'PSE'=temp)
+  }
+  if ('PSC' %in% metrics) {
+    temp <- psc (samp=cmatrix, tree=tree)[ ,1]
+    res <- data.frame (res, 'PSC'=temp)
+  }
+  if ('PSD' %in% metrics) {
+    temp <- psd (samp=cmatrix, tree=tree)[ ,1]
+    res <- data.frame (res, 'PSD'=temp)
+  }
+  res
+}
+
 #' @name calcED
 #' @title Calculate Evolutionary Distinctiveness
 #' @description Calculate species evolutionary distinctiveness (ED) using one of three methods:
