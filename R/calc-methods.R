@@ -112,6 +112,16 @@ calcComPhyMets <- function(cmatrix, tree, min.spp = 2,
   if ('PD1' %in% metrics & min.spp < 2) {
     stop("Cannot compute type 1 PD for fewer than 2 species")
   }
+  # ensure tip names and colnames are shared
+  if (!any (colnames (cmatrix) %in% tree$tip.label)) {
+    stop ('No tip labels in community matrix')
+  }
+  # convert to matrix, if not
+  if (!is.matrix (cmatrix)) {
+    cmatrix.dimnames <- dimnames (cmatrix)
+    cmatrix <- as.matrix (cmatrix)
+    dimnames (cmatrix) <- cmatrix.dimnames
+  }
   # add site names if none
   if (is.null (rownames (cmatrix))) {
     rownames (cmatrix) <- paste0 ('site_', 1:nrow (cmatrix))
