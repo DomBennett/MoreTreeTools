@@ -51,7 +51,7 @@ taxaResolve <- function (names, batch = 100, datasource = 4){
     match.type <- prescore <- score <- rep (NA, length (names))
   for (i in 1:length (names)){
     #print(i)
-    if (length (data[[i]]) == 1){
+    if (!'results' %in% names (data[[i]])){
       search.name[i] <- data[[i]][[1]]
     } else {
       search.name[i] <- data[[i]][[1]]
