@@ -21,19 +21,7 @@ I often need to quickly work out the size of a tree. This often means
 writing \code{length (tree$tip.label)} over and over... but with this function
 you can simply write \code{getSize(tree)}, that's a saving of 10 characters
 (no sniffing matter for the hard core programmer) plus it looks neater. Not
-to mention saving your brain time too, such as in this real world scenario:
-
-
-Oh how do I work how many tips a tree has? [pause -- thinking] Oh yeah I just need
-to get the length of the tip labels vector because a phylogenetic tree is just a list
-consisting of at least one character vector, one matrix and an integer. So, I just
-need to type \code{length(tree$tiplabels)}.... Hmmm why didn't that work? Oh yeah, I need
-to add a dot. So it shoud be \code{length(tree$tip.labels)}... WTH!? Why didn't that work?
-OK OK... let's think. [pause -- thinking] Let's just check the names of the tree slots ...
-\code{names(tree)}. Damnit why's tip labels singular?
-
-
-... Well you get the idea.
+to mention saving your brain time too.
 }
 \references{
 No references yet!

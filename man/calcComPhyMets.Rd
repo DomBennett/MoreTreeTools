@@ -14,7 +14,7 @@ calcComPhyMets(cmatrix, tree, min.spp = 2, metrics = c("PD1", "PD2", "PD3",
 
 \item{min.spp}{minimum number of species at site, default 2}
 
-\item{metric}{what metric to use, as a single character or vector, default all metrics}
+\item{metric}{what metric to use as vector, default all metrics}
 }
 \description{
 One-stop function for calculating a range of community phylogenetic metrics

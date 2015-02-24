@@ -1,6 +1,6 @@
 #' @name blockplot
 #' @title Plot Blocks for Detecting Phylogenetic Signal
-#' @description A plot function for visualing phylogenetic signal in
+#' @description Experimental plot function for visualing phylogenetic signal in
 #'  a tree using blocks to represent branches.
 #' @details No details
 #' @template base_template
@@ -15,6 +15,8 @@
 #' trait <- c (rep (1, 8), rep (0, 8))
 #' names (trait) <- tree$tip.label
 #' # Plot blocks ...
+#' blockplot (tree, factor(trait), title = 'Perfect signal', gradient = FALSE)
+#' # Or gradient ....
 #' blockplot (tree, trait, title = 'Perfect signal', gradient = TRUE)
 #' # Repeat with evenly distributed traits ...
 #' trait <- rep (c (0, 1), 8)
@@ -27,8 +29,7 @@
 #' blockplot (tree, trait, title = 'Random trait', gradient = TRUE)
 #' # ... isn't as symetrical
 
-blockplot <- function (tree, trait, gradient = TRUE,
-                       title = NULL) {
+blockplot <- function (tree, trait, gradient = TRUE, title = NULL) {
   .byTraitType <- function (i) {
     # calculate proportion of trait per edge for categorical
     #  traits
@@ -58,8 +59,8 @@ blockplot <- function (tree, trait, gradient = TRUE,
     }
     tip <- tree$tip.label[i]
     edges <- getEdges (tree, tips = tip, type = 2)
-    temp <- edge.mappings[tree$edge[, 2] %in%
-                            tree$edge[edges, 2]]
+    temp <- edge.mappings[,tree$edge[, 2] %in%
+                          tree$edge[edges, 2], drop=FALSE]
     res <- mdply (.data = data.frame (
       j = 1:length (temp)), .fun = .eachTip)[ ,-1]
     res$x2 <- cumsum (res$p.trait)
@@ -100,6 +101,7 @@ blockplot <- function (tree, trait, gradient = TRUE,
   children.by.edge <- mlply (.data = data.frame (
     node = tree$edge[ ,2]), .fun = getChildren, tree)
   # get proportion of edge.length of each trait based on FP
+  trait.types <- unique (trait)
   if (is.factor (trait)) {
     edge.mappings <- mdply (.data = data.frame (
       i = 1:length (trait.types)), .fun = .byTraitType)[ ,-1]

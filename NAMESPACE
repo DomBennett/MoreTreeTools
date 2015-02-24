@@ -1,7 +1,7 @@
 import (methods)
 import (ggplot2)
 import (ape)
-import (plyr)
+importFrom (plyr, compact)
 importFrom (RJSONIO, fromJSON)
 importFrom (stringr, str_replace_all)
 importFrom (picante, psv)
