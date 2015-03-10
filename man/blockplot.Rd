@@ -14,7 +14,7 @@ blockplot(tree, trait, gradient = TRUE, title = NULL)
 \item{title}{title of plot (default NULL)}
 }
 \description{
-A plot function for visualing phylogenetic signal in
+Experimental plot function for visualing phylogenetic signal in
  a tree using blocks to represent branches.
 }
 \details{
@@ -28,6 +28,8 @@ tree <- compute.brlen (stree (16, 'balanced'))
 trait <- c (rep (1, 8), rep (0, 8))
 names (trait) <- tree$tip.label
 # Plot blocks ...
+blockplot (tree, factor(trait), title = 'Perfect signal', gradient = FALSE)
+# Or gradient ....
 blockplot (tree, trait, title = 'Perfect signal', gradient = TRUE)
 # Repeat with evenly distributed traits ...
 trait <- rep (c (0, 1), 8)
