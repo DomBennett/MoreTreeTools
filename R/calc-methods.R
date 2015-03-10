@@ -489,3 +489,275 @@ calcDist <- function (tree1, tree2, method = c ('all', 'PH85', 'score', 'dmat'),
               'score' = calcScore (tree1, tree2),
               'dmat' = calcDmat (tree1, tree2))
 }
+
+#' @name extractTree
+#' @title Extract tree for names given
+#' @description Return a tree of the names given with the option of searching online
+#' to perform fuzzy-name matching.
+#' @details This function firsts matches names to tip labels in tree, if not all names
+#' are present in the tree and 'fuzzy' is true, it will then search the online taxonomic
+#' names resolution service Global Names Resolver. NCBI taxonomic IDs are then matched
+#' between tip labels and names, if names are still not mapped to tree, names are mapped
+#' to tips using random mapping. For example, if an unmapped name is a member of the same
+#' genus as several species in the tree, the name will be mapped to the tree with any one
+#' of these at random.
+#' 
+#' If stats is true, the function will return a list of the extracted tree and a data frame
+#' giving the proportions of names mapped to the tree, names mapped by exact string matching,
+#' fuzzy matching and random taxonomic group placement. Of those names that are mapped using
+#' random taxonomic placement, the mean NCBI rank number is returned. These are roughly
+#' equivalent to:
+#' 
+#' Rank         Number
+#' 
+#' superkingdom    2
+#' 
+#' kingdom         4
+#' 
+#' phylum          9
+#' 
+#' subphylum       10
+#' 
+#' superclass      12
+#' 
+#' class           18
+#' 
+#' superorder      21
+#' 
+#' order           22
+#' 
+#' suborder        23
+#' 
+#' family          24
+#' 
+#' subfamily       25
+#' 
+#' genus           26
+#' 
+#' species         27
+#' 
+#' @template base_template
+#' @param names vector of names of tips to be extracted
+#' @param fuzzy boolean, if true will search Global Names Resolver online
+#' @param stats boolean, if true returns list object of extracted tree and extraction statistics
+#' @export
+#' @examples
+#' # example.var <- exampleFun (test.data)
+
+.searchTreeNames <- function (tree, parent.node, previous.results=NULL) {
+  # search and return resolved names for a tree, starting with
+  #  a subset based on parent node and updating to parent of
+  #  parent node if previous.results given
+  # Returns a taxaResolve() data.frame
+  if (is.null (previous.results)) {
+    # if no previous.results create empty data frame
+    name.string <- canonical.form <- lineage <- lineage.ids <-
+      rank <- taxid <- match.type <- prescore <- score <-
+      rep (NA, getSize (tree))
+    previous.results <- data.frame (search.name=tree$tip.label, name.string,
+                                    canonical.form, lineage, lineage.ids, rank,
+                                    taxid, match.type, prescore, score)
+  } else {
+    # else, update parent node
+    parent.node <<- getParent (tree, node=parent.node)
+    if (parent.node == getSize (tree) + 1) {
+      return (previous.results)
+    }
+  }
+  # prevent searching for thigns already seen
+  deja.vues <- previous.results$search.name[!is.na (previous.results$name.string)]
+  # get subset of tree and resolve
+  subset.tree <- extract.clade (tree, node = parent.node)
+  subset.names <- subset.tree$tip.label[!subset.tree$tip.label %in% deja.vues]
+  subset.resolved <- taxaResolve (names = subset.names)
+  # find match in previous.results
+  match.index <- match (previous.results$search.name, subset.resolved$search.name)
+  match.index <- match.index[!is.na (match.index)]
+  # loop through each column, extract matching names and replace in
+  #  previous results. Use character to prevent levels.
+  for (i in 1:ncol (subset.resolved)) {
+    previous.results[match.index, i] <- as.character (subset.resolved[ ,i])
+  }
+  previous.results
+}
+
+extractTree <- function (tree, names, fuzzy=TRUE, stats=FALSE) {
+  # internal functions
+  extract <- function (tree, names) {
+    # return tree representing names, also stats
+    res.tree <- drop.tip (tree, tip = tree$tip.label[!tree$tip.label %in% names])
+    if (!stats) {
+      return (res.tree)
+    } else {
+      p.names <- sum (names %in% tree$tip.label)/length (names)
+      p.matched <- length (matching.names) / length (names)
+      p.fuzzy <- n.fuzzy/length (names)
+      p.rand <- length (ranks)/length (names)
+      mean.rank <- mean (ranks)
+      res.stats <- data.frame (p.names, p.matched, p.fuzzy, p.rand, mean.rank)
+      return (list ('tree'=res.tree, 'stats'=res.stats))
+    }
+  }
+  if (!is.rooted (tree)) {
+    stop ('Tree must be rooted.')
+  }
+  # stats
+  n.fuzzy <- 0  # number of names placed based on fuzzy match
+  ranks <- vector ()  # NCBI taxonomic where tips have been randomly added
+  # drop _
+  tree$tip.label <- gsub ('_', ' ', tree$tip.label)
+  names <- gsub ('_', ' ', names)
+  # finding matching and non-matching names
+  matching.names <- names[names %in% tree$tip.label]
+  nonmatching.names <- names[!names %in% tree$tip.label]
+  # stop now if all names match names in tree or fuzzy is false
+  if (!fuzzy || length (matching.names) == length (names)) {
+    return (extract (tree, names))
+  }
+  # resolve names that didn't string match
+  resolved <- taxaResolve (names=nonmatching.names)
+  # drop NAs
+  resolved <- resolved[!is.na (resolved$name.string), ]
+  # separate lineages
+  resolved.lineages <- strsplit (as.vector (resolved$lineage), '\\|')
+  # stop now if none resolved
+  if (!nrow (resolved) > 0) {
+    return (extract (tree, names))
+  }
+  # get parent of matched names to reduce the number of searches needed
+  if (length (matching.names) > 1) {
+    parent.node <- getParent (tree = tree, tips = matching.names)
+  } else {
+    # else whole tree
+    parent.node <- getSize (tree) + 1
+  }
+  tree.resolved <- NULL
+  # keep looping and increasing the sample size until no longer possible
+  while (nrow (resolved) > 0) {
+    # get resolved names for all tips in tree
+    tree.resolved <- .searchTreeNames (tree=tree, parent.node=parent.node,
+                                       previous.results=tree.resolved)
+    # separate lineages
+    tree.lineages <- strsplit (as.vector (tree.resolved$lineage), '\\|')
+    # calculate min rank
+    bool <- rep (TRUE, length (tree.lineages[[1]]))
+    for (tree.lineage in tree.lineages[2:length (tree.lineages)]) {
+      bool <- bool & (tree.lineages[[1]] %in% tree.lineage)
+    }
+    min.rank <- which (bool)  # this ensures the sampled tree is not too narrow
+    min.rank <- min.rank[length (min.rank)]
+    # loop through each in resolved and match to tree subset
+    drop.vector <- rep (FALSE, nrow (resolved))  # bool
+    for (i in 1:nrow (resolved)) {
+      # first check if taxid matches
+      taxid <- as.character (resolved$taxid[i])
+      if (taxid %in% tree.resolved$taxid) {
+        tree$tip.label[taxid == tree.resolved$taxid] <-
+          as.character (resolved$search.name[i])
+        drop.vector[i] <- TRUE
+        n.fuzzy <- n.fuzzy + 1
+        next
+      }
+      # else check if lineage matches
+      lineage <- resolved.lineages[[i]]
+      # loop through each in tree lineages to find the best matching tip
+      matches <- rep (NA, length (tree.lineages))
+      for (j in 1:length (tree.lineages)) {
+        matches[j] <- max (which (lineage %in% tree.lineages[[j]]))
+      }
+      if (max (matches)[1] >= min.rank) {
+        possibles <- as.vector (which (matches == max (matches)))
+        if (length (possibles) > 1) {
+          # choose one at random
+          match <- sample (possibles, 1)
+        } else {
+          match <- possibles
+        }
+        tree$tip.label[match] <- as.character (resolved$search.name[i])
+        drop.vector[i] <- TRUE
+        ranks <- append (ranks, max (matches))
+      }
+    }
+    # drop resolved names now accounted for
+    resolved <- resolved[!drop.vector, ]
+    # if parent node is root, break out of while loop
+    if (parent.node == getSize (tree) + 1) {
+      break
+    }
+  }
+  return (extract (tree, names))
+}
+
+  
+#   
+#   while (TRUE) {
+#     # transfer matching IDs to sample tree
+#     matching.nonmatching <- nonmatching.names[nonmatching.resolved$taxid %in% sample.resolved$taxid]
+#     if (length (matching.nonmatching) > 1) {
+#       # match ids between resolution results
+#       sample.tree.map <- match (nonmatching.resolved$taxid, sample.resolved$taxid)
+#       # remove NAs
+#       sample.tree.map <- sample.tree.map[!is.na (sample.tree.map)]
+#       # map these names to tips on tree
+#       sample.tree.map <- match (sample.resolved$search.name[sample.tree.map], tree$tip.label)
+#       # replace these names with names in names
+#       tree$tip.label[sample.tree.map] <- matching.nonmatching
+#       # remove names now accounted for
+#       nonmatching.resolved.taxids <- nonmatching.resolved$taxid
+#       nonmatching.names <- nonmatching.names[!nonmatching.resolved$taxid %in% sample.resolved$taxid]
+#       nonmatching.resolved <- nonmatching.resolved[!nonmatching.resolved$taxid %in% sample.resolved$taxid, ]
+#       sample.resolved <- sample.resolved[!sample.resolved$taxid %in% nonmatching.resolved.taxids, ]
+#       # update counter
+#       n.fuzzy.match <- n.fuzzy.match + length (matching.nonmatching)
+#     }
+#     if (length (nonmatching.names) > 0 & nrow (nonmatching.resolved) > 0) {
+#       # randomly assign non-matching ids to shared taxonomic group
+#       sample.lineages <- strsplit (as.vector (sample.resolved$lineage), '\\|')
+#       sample.lineages <- sample.lineages[!is.na (sample.lineages)]
+#       # first find the minimum rank
+#       bool <- rep (TRUE, length (sample.lineages[[1]]))
+#       for (sample.lineage in sample.lineages[2:length (sample.lineages)]) {
+#         bool <- bool & (sample.lineages[[1]] %in% sample.lineage)
+#       }
+#       min.rank <- which (bool)  # this ensures the sample tree is not too narrow
+#       min.rank <- min.rank[length (min.rank)]
+#       # loop through each nonmatching.lineage, map to random tip based on lineage
+#       nonmatching.lineages <- strsplit (as.vector (nonmatching.resolved$lineage), '\\|')
+#       drop.vector <- rep (FALSE, length (nonmatching.lineages))  # at end of loop drop nonmatched resovled names
+#       for (i in 1:nrow (nonmatching.resolved)) {
+#         matches <- rep (NA, length (sample.lineages))
+#         for (j in 1:length (sample.lineages)) {
+#           matches[j] <- max (which (nonmatching.lineages[[i]] %in% sample.lineages[[j]]))
+#         }
+#         if (max (matches)[1] >= min.rank) {
+#           # choose highest ranking matches at random
+#           random.match <- sample.lineages[[sample (which (matches == max (matches, na.rm = TRUE)), 1)]]
+#           # replace name in tree
+#           tree$tip.label[tree$tip.label == random.match[length (random.match)]] <-
+#             nonmatching.lineages[[i]][length (nonmatching.lineages[[i]])]
+#           # change drop vector
+#           drop.vector[i] <- TRUE
+#           # stats
+#           ranks <- append (ranks, max (matches)[1])
+#         }
+#       }
+#       # drop
+#       nonmatching.resolved <- nonmatching.resolved[!drop.vector, ]
+#     }
+#     # loop again if more tip labels can be searched and unmatched names are resolved but not in tree
+#     if (getSize (tree) > getSize (sample.tree) & any (!names %in% tree$tip.label) &
+#           nrow (nonmatching.resolved) > 0) {
+#       # get parent above current parent
+#       parent.node <- getParent (tree = tree, node = parent.node)
+#       sample.tree <- extract.clade (tree, node = parent.node)
+#       # get new names and search
+#       new.sample.names <- sample.tree$tip.label[!sample.tree$tip.label %in% names]
+#       new.sample.names <- new.sample.names[!new.sample.names %in% sample.names]
+#       # replace existing sample.resolved
+#       sample.resolved <- taxaResolve (names = new.sample.names)
+#     } else {
+#       break
+#     }
+#   }
+#   return (extract (tree, names))
+# }
