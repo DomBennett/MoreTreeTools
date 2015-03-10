@@ -1,29 +1,20 @@
-.safeFromJSON <- function (url, max.trys = 10) {
-  # Safe wrapper for fromJSON
-  trys <- 0
-  while (trys < max.trys) {
-    json.obj <- try (fromJSON (url), silent = TRUE)
-    if (class (json.obj) == 'try-error') {
-      cat ('---- Connection failed: trying again ----\n')
-      trys <- trys + 1
-      Sys.sleep (10)
-    } else {
-      return (json.obj)
-    }
-  }
-  stop ("Failed to connect, server may be down.")
-}
+#' @name taxaResolve
+#' @title Resolve taxonmic names online
+#' @description Resolve taxonomic names via the Global Names Resolver.
+#' @details Returns dataframe containing GNR metadata for each name wames
+#' that cannot be resolved are returned as NA. Various datasources are 
+#' available, see http://resolver.globalnames.biodinfo.org/data_sources for a
+#' list and IDs. Default is 4 for NCBI.
+#' @param names vector of names
+#' @param batch size of the batches to be queried
+#' @param datasource id number of the 
+#' @param genus boolean, if true will search against GNR with just the genus
+#'  name for names that failed to resolve using the full species name
+#' @export
+#' @examples
+#' # example.var <- exampleFun (test.data)
 
-taxaResolve <- function (names, batch = 100, datasource = 4){
-  # Resolve taxonomic names via the Global Names Resolver.
-  #  Names that cannot be resolved are returned as NA.
-  #
-  # Args:
-  #  names: vector of names
-  #  batch: the max batch number of names to be searched
-  #
-  # Return:
-  #  dataframe containing GNR metadata for each name
+taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
   batchResolve <- function (batch.names) {
     #create query from names
     url <- "http://resolver.globalnames.org/name_resolvers.json?"
@@ -36,6 +27,8 @@ taxaResolve <- function (names, batch = 100, datasource = 4){
     data <- .safeFromJSON (query)$data
     return (data)
   }
+  # make sure names don't have '_'
+  names <- gsub ('_', ' ', names)
   data <- list()
   # Split names into batch sized chunks
   #  http://stackoverflow.com/questions/3318333/split-a-vector-into-chunks-in-r
@@ -74,13 +67,39 @@ taxaResolve <- function (names, batch = 100, datasource = 4){
       score[i] <- data[[i]]$results[[1]]$score
     }
   }
-  res <- data.frame (search.name = search.name,
-                     name.string = name.string,
-                     canonical.form = canonical.form,
-                     lineage = lineage, lineage.ids =
-                       lineage.ids, rank = rank,
-                     taxid = taxid, match.type =
-                       match.type, prescore = prescore,
-                     score = score)
+  res <- data.frame (search.name=search.name,
+                     name.string=name.string,
+                     canonical.form=canonical.form,
+                     lineage=lineage, lineage.ids=lineage.ids,
+                     rank=rank, taxid=taxid,
+                     match.type=match.type, prescore=prescore,
+                     score=score)
+  failed.bool <- is.na (res$name.string)
+  if (genus & any (failed.bool)) {
+    # if genus, search just genus names
+    genus.names <- sub ('\\s+.*', '', res$search.name[failed.bool])
+    genus.res <- taxaResolve (genus.names, batch, datasource, genus=FALSE)
+    # replace in original results, all slots except search.name
+    res[failed.bool, 2:nrow(res)] <- genus.res[ ,-1]
+  }
   return (res)
+}
+
+.safeFromJSON <- function (url, max.trys=10, power=2) {
+  # Safe wrapper for fromJSON
+  trys <- 0
+  waittime <- 2
+  while (trys < max.trys) {
+    json.obj <- try (fromJSON (url), silent = TRUE)
+    if (class (json.obj) == 'try-error') {
+      cat ('---- Connection failed: trying again in [', waittime,
+           '----\n')
+      trys <- trys + 1
+      Sys.sleep (waittime)
+      waittime <- waittime*power
+    } else {
+      return (json.obj)
+    }
+  }
+  stop ("Failed to connect, server may be down.")
 }
