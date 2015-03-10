@@ -60,6 +60,15 @@ test_that ('getSister([basic]) works', {
   expect_that (getSister (hominoids, 21), is_equivalent_to (orangutan))
 })
 
+test_that ('getParent([node specified]) works', {
+  expect_that (getParent (hominoids, node = 21), equals (20))
+})
+
+test_that ('getParent([tips specified]) works', {
+  tips <- c ('Gorilla gorilla', 'Pan troglodytes', 'Pongo pygmaeus')
+  expect_that (getParent (hominoids, tips=tips), equals (20))
+})
+
 test_that ('getEdges([node specified]) works', {
   expect_that (getEdges (hominoids, 21),
                is_equivalent_to (c (5, 6, 7, 8, 9, 10)))
