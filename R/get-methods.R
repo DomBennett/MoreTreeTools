@@ -144,6 +144,54 @@ getSister <- function (tree, node = 'all') {
   return (res)
 }
 
+#' @name getParent
+#' @title Return parent node
+#' @description Return parent node of a node or a vector of tips
+#' @template base_template
+#' @param node number indicating node
+#' @param tips tip labels or numbers
+
+getParent <- function (tree, node=NULL, tips=NULL) {
+  if (is.null (tips) & is.null (node)) {
+    stop ('Must provide either tips or nodes argument')
+  }
+  if (!is.null (node)) {
+    if (!is.numeric (node)) {
+      stop ('Node must be numeric')
+    }
+    if (node > getSize (tree) + tree$Nnode) {
+      stop ('Node not in tree')
+    }
+    if ((node == getSize (tree) + 1) & is.rooted (tree)) {
+      # if node is root, return it
+      return (node)
+    }
+    return (tree$edge[tree$edge[ ,2] == node, 1])
+  }
+  if (is.character (tips)) {
+    # if tips are labels
+    edges <- match (match (tips, tree$tip.label), tree$edge[,2])
+  } else {
+    # ... else they're numbers
+    edges <- match (tips, tree$edge[,2])
+  }
+  edges <- match (match (tips, tree$tip.label), tree$edge[,2])
+  end.nodes <- tree$edge[edges, 1]
+  term.node <- length (tree$tip.label) + 1
+  while (TRUE){
+    end.nodes <- sort (end.nodes, TRUE)
+    start.node <- end.nodes[1]
+    edge <- match (start.node, tree$edge[,2])
+    end.node <- tree$edge[edge,1]
+    edges <- c(edges, edge)
+    end.nodes <- c(end.nodes[!end.nodes %in% start.node], end.node)
+    if (sum (end.nodes[1] == end.nodes) == length (end.nodes)){
+      break
+    }
+  }
+  return (end.node)
+}
+
 #' @name getEdges
 #' @title Return edges
 #' @description Return all children edges from a node,
