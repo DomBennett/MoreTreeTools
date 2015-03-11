@@ -56,14 +56,25 @@ test_that ('calcDist([basic]) works', {
   expect_that (0.6516854, equals (distances[['dmat']]))  # max for 10 tips
 })
 
-test_that ('extractTree([basic]) works', {
+test_that ('mapNames([basic]) works', {
   # names with some typos and species not in tree
   names <- c ('Gorila gorila', 'Allenopithecus nigrowiridiss', 'Macaca madeppy',
-              'Macaca cyclopis', 'Macaca thibetana', 'Papio homadryas', 'Colobus angolensis',
               'Pan paniscus', 'Hylobates pileatus', 'Pygathrix bieti', 'Pan troglodytes',
-              'Hylobates leucogenys', 'Hylobates hoolock', 'Erythrocebus patas',
               'Hylobates madeuppy', 'Pongo pingu', 'Homo neanderthelensis', 'Homo sapins')
-  res <- extractTree (catarrhines, names, stats=TRUE)
-  plot (res$tree)
-  res$stat
+  res <- mapNames (catarrhines, names, stats=TRUE)
+  expect_that ('phylo', equals (class (res$tree)))
+  # we expect the names to be resolved to the genus level and above
+  expect_more_than (res$stat$mean.rank, 29)
+})
+
+test_that ('.searchTreeNames([basic]) works', {
+  
+})
+
+test_that ('.addTip([basic]) works', {
+  
+})
+
+test_that ('.extract([basic]) works', {
+  
 })
