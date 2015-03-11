@@ -584,6 +584,8 @@ mapNames <- function (tree, names, fuzzy=TRUE, stats=FALSE, datasource=4) {
     warning ('No branch lengths in tree, branch lengths added with `compute.brlen()`')
     tree <- compute.brlen (tree)
   }
+  # randomise names to prevent biasing random tree generated
+  names <- sample (names)
   # stats
   ranks <- vector ()  # taxonomic rank where tips have been randomly added
   # drop _
@@ -645,8 +647,7 @@ mapNames <- function (tree, names, fuzzy=TRUE, stats=FALSE, datasource=4) {
             match <- possibles
           }
           tree <- .addTip (tree=tree, tip.i=res$resolved$tip.i[match],
-                               new.name=as.character (resolved$search.name[i]),
-                               names=names)
+                               new.name=as.character (resolved$search.name[i]))
           # get parent node + 1
           parent.node <- parent.node + 1
           # update tip.i as new tip is added to tree
@@ -671,9 +672,8 @@ mapNames <- function (tree, names, fuzzy=TRUE, stats=FALSE, datasource=4) {
 # HIDDEN mapNames functions
 .searchTreeNames <- function (tree, parent.node, previous=NULL,
                               datasource=datasource) {
-  # search and return resolved names for a tree, starting with
-  #  a subset based on parent node and updating to parent of
-  #  parent node if previous given
+  # search and return resolved names for a tree using a subset of names
+  # based on parent.node
   # Returns a taxaResolve() data.frame
   if (!is.null (previous)) {
     deja.vues <- as.vector (previous$resolved$search.name)
@@ -685,7 +685,7 @@ mapNames <- function (tree, names, fuzzy=TRUE, stats=FALSE, datasource=4) {
   # exclude names already searched
   subset.names <- subset.tree$tip.label[!subset.tree$tip.label %in% deja.vues]
   if (length (subset.names) > 1) {
-    res <- taxaResolve (names = subset.names, datasource=datasource)
+    res <- taxaResolve (names=subset.names, datasource=datasource)
     # remove NA results
     res <- res[!is.na (res$name.string), ]
     # stick to previous results
@@ -702,7 +702,7 @@ mapNames <- function (tree, names, fuzzy=TRUE, stats=FALSE, datasource=4) {
   list ('resolved'=res, 'lineages'=lineages)
 }
 
-.addTip <- function (tree, tip.i, new.name, names) {
+.addTip <- function (tree, tip.i, new.name) {
   # add new tip to new tree on pendant edge of matching tip
   edge <- which (tip.i == tree$edge[ ,2])
   # random node age somewhere on pendant edge
