@@ -86,7 +86,7 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
     genus.names <- sub ('\\s+.*', '', res$search.name[failed.bool])
     genus.res <- taxaResolve (genus.names, batch, datasource, genus=FALSE)
     # replace in original results, all slots except search.name
-    res[failed.bool, 2:nrow(res)] <- genus.res[ ,-1]
+    res[failed.bool, 2:ncol (res)] <- genus.res[ ,-1]
   }
   return (res)
 }
