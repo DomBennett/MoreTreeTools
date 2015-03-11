@@ -3,16 +3,22 @@
 #' @description Resolve taxonomic names via the Global Names Resolver.
 #' @details Returns dataframe containing GNR metadata for each name wames
 #' that cannot be resolved are returned as NA. Various datasources are 
-#' available, see http://resolver.globalnames.biodinfo.org/data_sources for a
+#' available, see \url{http://resolver.globalnames.biodinfo.org/data_sources} for a
 #' list and IDs. Default is 4 for NCBI.
 #' @param names vector of names
 #' @param batch size of the batches to be queried
-#' @param datasource id number of the 
+#' @param datasource ID number of the datasource
 #' @param genus boolean, if true will search against GNR with just the genus
 #'  name for names that failed to resolve using the full species name
 #' @export
 #' @examples
-#' # example.var <- exampleFun (test.data)
+#' my.lovely.names <- c ('Gallus gallus', 'Pongo pingu', 'Homo sapiens',
+#'                       'Arabidopsis thaliana', 'Macaca thibetana', 'Bacillus subtilis')
+#' res <- taxaResolve (names=my.lovely.names)
+#' length (colnames (res))  # 10 different metadata for returned names including original search name
+#' # let's look at the lineages
+#' lineages <- strsplit (as.vector (res$lineage), '\\|')
+#' print (lineages[[6]])  # the bacteria has far fewer taxonomic levels
 
 taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
   batchResolve <- function (batch.names) {
