@@ -68,13 +68,35 @@ test_that ('mapNames([basic]) works', {
 })
 
 test_that ('.searchTreeNames([basic]) works', {
-  
+  # get search results for names descending from node 106
+  res.1 <- .searchTreeNames (tree=catarrhines, parent.node=106,
+                             previous=NULL, datasource=4)
+  # get results for all the children of the parent of 106
+  new.parent.node <- getParent (tree=catarrhines, node=106)
+  res.2 <- .searchTreeNames (tree=catarrhines, parent.node=new.parent.node,
+                             previous=res.1, datasource=4)
+  # more rows in res.2
+  expect_more_than (nrow (res.2$resolved), nrow (res.1$resolved))
+  # all names in res.1 should be in res.2
+  expect_true (all (as.vector (res.1$resolved$search.name) %in%
+                  as.vector (res.2$resolved$search.name)))
+  # not all names in res.2 should be in res.1
+  expect_false (all (as.vector (res.2$resolved$search.name) %in%
+                      as.vector (res.1$resolved$search.name)))
 })
 
 test_that ('.addTip([basic]) works', {
-  
+  tree <- compute.brlen (rtree (10))
+  tree <- .addTip (tree, tip.i=10, new.name='t11')
+  expect_that (tree$tip.label[11], equals ('t11'))
 })
 
 test_that ('.extract([basic]) works', {
-  
+  sample.names <- sample (catarrhines$tip.label, 10)
+  res <- .extract (tree=catarrhines, names=sample.names,
+                   stats=TRUE, matching.names=sample.names,
+                   n.fuzzy=0, ranks=vector())
+  expect_that (res$stat$p.names, equals (1))
+  expect_that ('phylo', equals (class (res$tree)))
+  expect_that (getSize (res$tree), equals (10))
 })
