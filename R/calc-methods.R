@@ -506,58 +506,15 @@ calcDist <- function (tree1, tree2, method = c ('all', 'PH85', 'score', 'dmat'),
 #' 
 #' In cases where a large proportion of the tips are mapped using random placement, it may
 #' be best to generate a distribution of trees that represent the range of possible phylogenetic
-#' relationships for the names and tree given.
-#' 
-#' If stats is true, the function will return a list of the extracted tree and a data frame
-#' giving the proportions of names mapped to the tree, names mapped by exact string matching,
-#' fuzzy matching and random taxonomic group placement. Of those names that are mapped using
-#' random taxonomic placement, the mean rank number is returned. For the NCBI taxonomy, these
-#' rank numbers are roughly equivalent to:
-#' 
-#'     Rank         Number
-#' 
-#'     superkingdom    2
-#' 
-#'     kingdom         4
-#' 
-#'     phylum          9
-#' 
-#'     subphylum       10
-#' 
-#'     superclass      12
-#' 
-#'     class           18
-#' 
-#'     superorder      21
-#' 
-#'     order           22
-#' 
-#'     suborder        23
-#'     
-#'     infraorder      24
-#'     
-#'     parvorder       25
-#'     
-#'     superfamily     26
-#' 
-#'     family          27
-#' 
-#'     subfamily       28
-#' 
-#'     genus           29
-#' 
-#'     species         30
-#' 
-#' These numbers depend on datasource and taxonomic group; some groups have more ranks than others.
-#' 
-#' If the mean rank number is very high, it is likely that the tree on which the names have been
-#' mapped does not represent them very well.
+#' relationships for the names and tree given. If iterations is greater than 1, instead of a
+#' single tree, a multiPhylo object of length iterations is returned representing this
+#' range of possible mappings.
 #' 
 #' @template base_template
 #' @param names vector of names of tips to be extracted
 #' @param fuzzy boolean, if true will search Global Names Resolver online
-#' @param stats boolean, if true returns list object of extracted tree and extraction statistics
 #' @param datasource GNR datasource ID, default 4 for NCBI
+#' @param iterations how many times to repeat?
 #' @export
 #' @examples
 #' # bring in the catarrhines data
@@ -568,14 +525,14 @@ calcDist <- function (tree1, tree2, method = c ('all', 'PH85', 'score', 'dmat'),
 #' # 4 of the names are already in the tree (one has a spelling mistake) but the other 3
 #' # do not exist and will be mapped randomly based on resolved taxonomic lineages of the
 #' # names already in the tree and the names to be added.
-#' hominid.map <- mapNames (tree=catarrhines, names=names, stats=TRUE, fuzzy=TRUE)
-#' plot (hominid.map$tree)
-#' print (hominid.map$stats)  # all names were mapped, 4 fuzzily on average at the genus level
+#' hominid.map <- mapNames (tree=catarrhines, names=names, fuzzy=TRUE)
+#' plot (hominid.map)
 
-mapNames <- function (tree, names, fuzzy=TRUE, stats=FALSE, datasource=4) {
-  # early checks
-  if (!is.rooted (tree)) {
-    stop ('Tree must be rooted.')
+mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
+                      iterations=1) {
+  # SAFETY CHECK
+  if (iterations < 1) {
+    stop ('Iterations must be >=1')
   }
   if (!is.vector (names) && length (names) <= 1) {
     stop ('Names must be a vector of more than 1 character string')
@@ -584,149 +541,219 @@ mapNames <- function (tree, names, fuzzy=TRUE, stats=FALSE, datasource=4) {
     warning ('No branch lengths in tree, branch lengths added with `compute.brlen()`')
     tree <- compute.brlen (tree)
   }
-  # randomise names to prevent biasing random tree generated
-  names <- sample (names)
-  # stats
-  ranks <- vector ()  # taxonomic rank where tips have been randomly added
-  # drop _
+  # INIT
   tree$tip.label <- gsub ('_', ' ', tree$tip.label)
   names <- gsub ('_', ' ', names)
-  # finding matching and non-matching names
+  # find matching and non-matching names
   matching.names <- names[names %in% tree$tip.label]
   nonmatching.names <- names[!names %in% tree$tip.label]
   # stop now if all names match names in tree or fuzzy is false
   if (!fuzzy || length (matching.names) == length (names)) {
-    return (.extract (tree, names, stats, matching.names, ranks))
+    return (.mnEarlyReturn (tree, names, iterations))
   }
-  # resolve names that didn't string match
-  resolved <- taxaResolve (names=nonmatching.names, datasource=datasource)
-  # drop NAs
-  resolved <- resolved[!is.na (resolved$name.string), ]
-  # separate lineages
-  resolved.lineages <- strsplit (as.vector (resolved$lineage), '\\|')
-  # stop now if none resolved
-  if (!nrow (resolved) > 0) {
-    return (.extract (tree, names, stats, matching.names, ranks))
+  # VARIABLES AND ENVIRONMENTS
+  # place all parameters in an environment to save arguments
+  paraenv <- new.env (parent=emptyenv ())
+  paraenv$start.tree <- tree
+  paraenv$grow.tree <- tree
+  paraenv$datasource <- datasource
+  paraenv$matching.names <- matching.names
+  paraenv$names <- names
+  # hold query name resolution results in a list
+  qrylist <- .mnResolve (names=nonmatching.names, paraenv=paraenv)
+  if (!nrow (qrylist$resolved) > 0) {  # stop now if none resolved
+    return (.mnEarlyReturn (tree, names, iterations))
   }
-  # get parent of matched names to reduce the number of searches needed
-  if (length (matching.names) > 1) {
-    parent.node <- getParent (tree = tree, tips = matching.names)
+  # hold subject name resolution results in a single env
+  sbjctenv <- new.env (parent=emptyenv ())
+  .mnResolveUpdate (paraenv=paraenv, sbjctenv=sbjctenv)
+  # add qrylist results to sbjctenv
+  sbjctenv$resolved <- rbind (sbjctenv$resolved, qrylist$resolved)
+  sbjctenv$lineages <- c (sbjctenv$lineages, qrylist$lineages)
+  # hold all resulting trees and stats in a single env
+  resenv <- new.env (parent=emptyenv ())
+  resenv$trees <- list ()
+  # ITERATE
+  for (i in 1:iterations) {
+    # loop through for each iteration, write results to resenv
+    .mnMap (resenv=resenv, qrylist=qrylist, sbjctenv=sbjctenv,
+            paraenv=paraenv)
+  }
+  # RETURN
+  if (length (resenv$trees) > 1) {
+    trees <- resenv$trees
+    class (trees) <- 'multiPhylo'
   } else {
-    # else whole tree
-    parent.node <- getSize (tree) + 1
+    trees <- resenv$trees[[1]]
   }
-  res <- NULL
-  # keep looping and increasing the sample size until no longer possible
-  while (nrow (resolved) > 0) {
-    # get resolved names for all tips in tree
-    res <- .searchTreeNames (tree=tree, parent.node=parent.node,
-                                       previous=res, datasource=datasource)
-    if (nrow (res$resolved) > 0) {
+  return (trees)
+}
+# HIDDEN mapNames functions
+.mnMap <- function (resenv, qrylist, sbjctenv, paraenv) {
+  # INIT
+  # randomise order to prevent order bias
+  randomised <- sample (1:nrow (qrylist$resolved))
+  qrylist$resolved <- qrylist$resolved[randomised, ]
+  qrylist$lineages <- qrylist$lineages[randomised]
+  paraenv$grow.tree <- paraenv$start.tree
+  sbjctlist <- .mnTemporise(record=sbjctenv, tree=paraenv$grow.tree)  # convert to list
+  # LOOP -- until sbjctenv contains enough resolved names
+  while (nrow (qrylist$resolved) > 0) {
+    if (nrow (sbjctlist$resolved) > 0) {
       # calculate min rank
-      bool <- rep (TRUE, length (res$lineages[[1]]))
-      for (lineage in res$lineages[2:length (res$lineages)]) {
-        bool <- bool & (res$lineages[[1]] %in% lineage)
+      bool <- rep (TRUE, length (sbjctlist$lineages[[1]]))
+      for (lineage in sbjctlist$lineages[2:length (sbjctlist$lineages)]) {
+        bool <- bool & (sbjctlist$lineages[[1]] %in% lineage)
       }
       min.rank <- which (bool)  # this ensures the sampled tree is not too narrow
       min.rank <- min.rank[length (min.rank)]
-      # loop through each in resolved and match to tree subset
-      drop.vector <- rep (FALSE, nrow (resolved))  # bool
-      for (i in 1:nrow (resolved)) {
-        lineage <- resolved.lineages[[i]]
+      # loop through each in qrylist$resolved and match to sbjctlist$resolved
+      drop.vector <- rep (FALSE, nrow (qrylist$resolved))  # bool
+      for (i in 1:nrow (qrylist$resolved)) {
+        lineage <- qrylist$lineages[[i]]
         # loop through each in tree lineages to find the best matching tip
-        matches <- rep (NA, length (res$lineages))
-        for (j in 1:length (res$lineages)) {
-          matches[j] <- max (which (lineage %in% res$lineages[[j]]))
+        matches <- rep (NA, length (sbjctlist$lineages))
+        for (j in 1:length (sbjctlist$lineages)) {
+          matches[j] <- max (which (lineage %in% sbjctlist$lineages[[j]]))
         }
         if (max (matches, na.rm=TRUE)[1] >= min.rank) {
           possibles <- as.vector (which (matches == max (matches, na.rm=TRUE)))
-          if (length (possibles) > 1) {
-            # choose one at random
-            match <- sample (possibles, 1)
-          } else {
-            match <- possibles
-          }
-          tree <- .addTip (tree=tree, tip.i=res$resolved$tip.i[match],
-                               new.name=as.character (resolved$search.name[i]))
-          # get parent node + 1
-          parent.node <- parent.node + 1
-          # update tip.i as new tip is added to tree
-          res <- .searchTreeNames (tree=tree, parent.node=parent.node,
-                                   previous=res, datasource=datasource)
+          paraenv$grow.tree <- .mnAddTip (tree=paraenv$grow.tree,
+                                          tip.is=sbjctlist$resolved$tip.i[possibles],
+                                          new.name=as.character (
+                                            qrylist$resolved$search.name[i]))
+          # update tip.i in sbjctlist
+          sbjctlist <- .mnTemporise(record=sbjctlist, tree=paraenv$grow.tree)
           drop.vector[i] <- TRUE
-          ranks <- append (ranks, max (matches, na.rm=TRUE))
         }
       }
-      # drop resolved names now accounted for
-      resolved <- resolved[!drop.vector, ]
+      # drop resolved query names now accounted for
+      qrylist$resolved <- qrylist$resolved[!drop.vector, ]
+      qrylist$lineages <- qrylist$lineages[!drop.vector]
     }
-    # if parent node is root, break out of while loop
-    if (parent.node == getSize (tree) + 1) {
+    # if all names in tree sampled, exit
+    if (length (paraenv$deja.vues) == getSize (paraenv$tree)) {
       break
     }
-    parent.node <- getParent (tree, node=parent.node)
+    # if haven't broken out, update sbjctenv and extract new sbjctlist
+    .mnResolveUpdate (paraenv=paraenv, sbjctenv=sbjctenv)
+    sbjctlist <- .mnTemporise(record=sbjctenv, tree=paraenv$grow.tree)
   }
-  return (.extract (tree, names, stats, matching.names, ranks))
+  # save results to resenv
+  tree <- .mnExtract (tree=paraenv$grow.tree, names=paraenv$names)
+  resenv$trees <- c (resenv$trees, list (tree))
 }
-
-# HIDDEN mapNames functions
-.searchTreeNames <- function (tree, parent.node, previous=NULL,
-                              datasource=datasource) {
-  # search and return resolved names for a tree using a subset of names
-  # based on parent.node
-  # Returns a taxaResolve() data.frame
-  if (!is.null (previous)) {
-    deja.vues <- as.vector (previous$resolved$search.name)
-  } else {
-    deja.vues <- vector ()
-  }
-  # get subset of tree and resolve
-  subset.tree <- extract.clade (tree, node=parent.node)
-  # exclude names already searched
-  subset.names <- subset.tree$tip.label[!subset.tree$tip.label %in% deja.vues]
-  if (length (subset.names) > 1) {
-    res <- taxaResolve (names=subset.names, datasource=datasource)
-    # remove NA results
-    res <- res[!is.na (res$name.string), ]
-    # stick to previous results
-    if (!is.null (previous)) {
-      res$tip.i <- rep (NA, nrow (res))
-      res <- rbind (previous$resolved, res)
+.mnResolve <- function (names, paraenv) {
+  # Resolve names using taxaResolve, return list of taxaResolve
+  #  dataframe and a list of lineages for each name
+  res <- list ()
+  res['resolved'] <- list (taxaResolve (names=names,
+                                        datasource=paraenv$datasource))
+  # drop NAs
+  res$resolved <- res$resolved[!is.na (res$resolved$name.string), ]
+  # separate lineages
+  res['lineages'] <- list (strsplit (as.vector (res$resolved$lineage),
+                                     '\\|'))
+  return (res)
+}
+.mnSample <- function (paraenv) {
+  # sample names from a tree in a way to reduce searching
+  tree <- paraenv$grow.tree
+  tip <- sample (paraenv$matching.names, 1)
+  node <- tree$edge[tree$edge[ ,2] == which (tip == tree$tip.label), 1]
+  while (TRUE) {
+    children <- getChildren (tree, node=node)
+    if (any (!children %in% paraenv$deja.vues)) {
+      # exclude names already searched
+      children <- children[!children %in% paraenv$deja.vues]
+      return (children)
     }
-  } else {
-    res <- previous$resolved
+    node <- getParent (tree, node=node)
+    if (node == getSize (tree) + 1) {
+      break
+    }
   }
-  # add tip.is
-  res$tip.i <- match (res$search.name, tree$tip.label)
-  lineages <- strsplit (as.vector (res$lineage), '\\|')
-  list ('resolved'=res, 'lineages'=lineages)
+  vector ()
 }
-
-.addTip <- function (tree, tip.i, new.name) {
-  # add new tip to new tree on pendant edge of matching tip
-  edge <- which (tip.i == tree$edge[ ,2])
-  # random node age somewhere on pendant edge
-  node.age <- runif (1, 0, tree$edge.length[edge])
+.mnResolveUpdate <- function (paraenv, sbjctenv) {
+  # Update sbjenv -- by only searching when needed, reduce number of searches
+  # get sample of names
+  names <- .mnSample (paraenv)
+  if (length (names) > 0) {
+    # add names to deja.vues
+    paraenv$deja.vues <- c (paraenv$deja.vues, names)
+    # resolve these names
+    res <- .mnResolve (names, paraenv)
+    # stick to previous results
+    if (!is.null (sbjctenv$resolved) & !is.null (sbjctenv$lineages)) {
+      sbjctenv$resolved <- rbind (sbjctenv$resolved, res$resolved)
+      sbjctenv$lineages <- c (sbjctenv$lineages, res$lineages)
+    } else {
+      sbjctenv$resolved <- res$resolved
+      sbjctenv$lineages <- res$lineages
+    }
+  }
+}
+.mnTemporise <- function (record, tree) {
+  # return a temporary record for name mapping
+  # create a copy
+  res <- list ()
+  res$resolved <- record$resolved
+  res$lineages <- record$lineages
+  # add tip.i info
+  tip.i <- match (res$resolved$search.name, tree$tip.label)
+  not.in.tree <- is.na (tip.i)
+  res$resolved$tip.i <- tip.i
+  res$resolved <- res$resolved[!not.in.tree, ]
+  res$lineages <- res$lineages[!not.in.tree]
+  return (res)
+}
+.mnAddTip <- function (tree, tip.is, new.name) {
+  # add new tip
+  if (length (tip.is) == 1) {
+    # add to the pendant edge at a random time point
+    edge <- which (tip.is == tree$edge[ ,2])
+  } else {
+    # randomly map new tip to any edge in the clade
+    # represented by the matching tip.is
+    # find the parent node of all the matching tips
+    children <- tree$tip.label[tip.is]
+    parent.node <- getParent (tree, tips=children)
+    # get all descending edges + supporting edge
+    edges <- getEdges (tree, node=parent.node)
+    edges <- c (edges, which (tree$edge[ ,2] == parent.node))
+    # choose edge at random, bias sample based on branch length
+    edge <- sample (edges, size=1, prob=tree$edge.length[edges])
+  }
+  # random node age somewhere on edge
+  age.range <- getAge (tree, edge=edge)
+  node.age <- runif (n=1, min=age.range['min.age'],
+                     max=age.range['max.age'])
   tree <- addTip (tree, edge=edge, tip.name=new.name, node.age=node.age)
   return (tree)
 }
-
-.extract <- function (tree, names, stats, matching.names, ranks) {
+.mnExtract <- function (tree, names) {
   # return tree representing names, also stats
   if (sum (names %in% tree$tip.label) > 1) {
     res.tree <- drop.tip (tree, tip = tree$tip.label[!tree$tip.label %in% names])
-    if (!stats) {
-      return (res.tree)
-    } else {
-      p.names <- sum (names %in% tree$tip.label)/length (names)
-      n.matched <- length (matching.names)
-      n.fuzzy <- length (ranks)
-      mean.rank <- mean (ranks)
-      res.stats <- data.frame (p.names, n.matched, n.fuzzy, mean.rank)
-      return (list ('tree'=res.tree, 'stats'=res.stats))
-    }
+    return (res.tree)
   } else {
     warning ('Too few names could be mapped to tree')
     return (NA)
+  }
+}
+.mnEarlyReturn <- function (tree, names, iterations) {
+  # if mapNames returns tree early, return an object
+  #  that was expect i.e. phylo or multiphylo
+  tree <- .mnExtract (tree, names)
+  if (iterations == 1) {
+    return (tree)
+  } else {
+    trees <- list ()
+    for (i in 1:iterations) {
+      trees <- c (trees, list (tree))
+    }
+    class (trees) <- 'multiPhylo'
+    return (trees)
   }
 }
