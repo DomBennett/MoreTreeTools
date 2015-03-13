@@ -4,7 +4,7 @@
 \alias{mapNames}
 \title{Map names to a tree}
 \usage{
-mapNames(tree, names, fuzzy = TRUE, stats = FALSE, datasource = 4)
+mapNames(tree, names, fuzzy = TRUE, datasource = 4, iterations = 1)
 }
 \arguments{
 \item{tree}{phylogenetic tree (ape class)}
@@ -13,9 +13,9 @@ mapNames(tree, names, fuzzy = TRUE, stats = FALSE, datasource = 4)
 
 \item{fuzzy}{boolean, if true will search Global Names Resolver online}
 
-\item{stats}{boolean, if true returns list object of extracted tree and extraction statistics}
-
 \item{datasource}{GNR datasource ID, default 4 for NCBI}
+
+\item{iterations}{how many times to repeat?}
 }
 \description{
 Map names to a tree with the option of searching online
@@ -34,52 +34,9 @@ a random time point (it assumes the tree is time callibrated) -- see examples.
 
 In cases where a large proportion of the tips are mapped using random placement, it may
 be best to generate a distribution of trees that represent the range of possible phylogenetic
-relationships for the names and tree given.
-
-If stats is true, the function will return a list of the extracted tree and a data frame
-giving the proportions of names mapped to the tree, names mapped by exact string matching,
-fuzzy matching and random taxonomic group placement. Of those names that are mapped using
-random taxonomic placement, the mean rank number is returned. For the NCBI taxonomy, these
-rank numbers are roughly equivalent to:
-
-    Rank         Number
-
-    superkingdom    2
-
-    kingdom         4
-
-    phylum          9
-
-    subphylum       10
-
-    superclass      12
-
-    class           18
-
-    superorder      21
-
-    order           22
-
-    suborder        23
-
-    infraorder      24
-
-    parvorder       25
-
-    superfamily     26
-
-    family          27
-
-    subfamily       28
-
-    genus           29
-
-    species         30
-
-These numbers depend on datasource and taxonomic group; some groups have more ranks than others.
-
-If the mean rank number is very high, it is likely that the tree on which the names have been
-mapped does not represent them very well.
+relationships for the names and tree given. If iterations is greater than 1, instead of a
+single tree, a multiPhylo object of length iterations is returned representing this
+range of possible mappings.
 }
 \examples{
 # bring in the catarrhines data
@@ -90,9 +47,8 @@ names <- c ('Homo sapiens', 'Pongo pygmaeus', 'Gorilla gorila', 'Pan troglodytes
 # 4 of the names are already in the tree (one has a spelling mistake) but the other 3
 # do not exist and will be mapped randomly based on resolved taxonomic lineages of the
 # names already in the tree and the names to be added.
-hominid.map <- mapNames (tree=catarrhines, names=names, stats=TRUE, fuzzy=TRUE)
-plot (hominid.map$tree)
-print (hominid.map$stats)  # all names were mapped, 4 fuzzily on average at the genus level
+hominid.map <- mapNames (tree=catarrhines, names=names, fuzzy=TRUE)
+plot (hominid.map)
 }
 \references{
 No references yet!

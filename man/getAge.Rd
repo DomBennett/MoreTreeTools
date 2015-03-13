@@ -2,9 +2,9 @@
 % Please edit documentation in R/get-methods.R
 \name{getAge}
 \alias{getAge}
-\title{Return age of node}
+\title{Return age of node or edge}
 \usage{
-getAge(tree, node = "all")
+getAge(tree, node = "all", edge = NULL)
 }
 \arguments{
 \item{tree}{phylogenetic tree (ape class)}
@@ -12,16 +12,20 @@ getAge(tree, node = "all")
 \item{node}{number indicating node (default 'all')}
 }
 \description{
-Return age of tip or internal node
+Return age of tip, internal node or age range of an edge
  (so long as the tree provided is time calibrated with branch lengths).
 }
 \details{
 First calculates the root to tip distance, then calculates
 node age by subtracting this distance from the root to node distance.
+If edge provided returns the max and min age of each node of edge.
 If \code{node} equals 'all', will return a dataframe for all nodes.
 }
 \examples{
-# example.var <- exampleFun (test.data)
+data ('catarrhines')
+# when did humans and chimps split?
+node <- getParent (catarrhines, tips=c ('Homo sapiens', 'Pan troglodytes'))
+(getAge (catarrhines, node=node))  # 9.7MYA according to this tree
 }
 \references{
 No references yet!
