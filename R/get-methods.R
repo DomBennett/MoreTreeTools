@@ -63,19 +63,23 @@ getSize <- function (tree, type = c ('ntips', 'pd', 'rtt')) {
 }
 
 #' @name getAge
-#' @title Return age of node
-#' @description Return age of tip or internal node
+#' @title Return age of node or edge
+#' @description Return age of tip, internal node or age range of an edge
 #'  (so long as the tree provided is time calibrated with branch lengths).
 #' @details First calculates the root to tip distance, then calculates
 #' node age by subtracting this distance from the root to node distance.
+#' If edge provided returns the max and min age of each node of edge.
 #' If \code{node} equals 'all', will return a dataframe for all nodes.
 #' @template base_template
 #' @param node number indicating node (default 'all')
 #' @export
 #' @examples
-#' # example.var <- exampleFun (test.data)
+#' data ('catarrhines')
+#' # when did humans and chimps split?
+#' node <- getParent (catarrhines, tips=c ('Homo sapiens', 'Pan troglodytes'))
+#' (getAge (catarrhines, node=node))  # 9.7MYA according to this tree
 
-getAge <- function (tree, node = 'all') {
+getAge <- function (tree, node='all', edge=NULL) {
   run <- function (node) {
     # function for calculating age of node
     term.node <- length (tree$tip.label) + 1
@@ -95,15 +99,31 @@ getAge <- function (tree, node = 'all') {
     }
     return (tree.age - sum (tree$edge.length[edges]))
   }
-  tree.age <- max (diag (vcv.phylo (tree)))
+  # SAFETY CHECK
   if (node != 'all') {
-    return (run (node))
+    if (!is.numeric (node) || node > getSize (tree) + tree$Nnode) {
+      stop ('Node must either be `all` or a number specifying a node in tree.')
+    }
   }
-  # else node == all, run on all nodes
-  nodes <- 1:(length (tree$tip.label) + tree$Nnode)
-  res <- mdply (.data = data.frame (node = nodes), .fun = run)
-  colnames (res)[2] <- 'age'
-  res
+  if (!is.null (edge)) {
+    if (!is.numeric (edge) || edge > nrow (tree$edge)) {
+      stop ('Edge must be a numeric specifying an edge row in tree$edge')
+    }
+  }
+  tree.age <- max (diag (vcv.phylo (tree)))
+  if (!is.null (edge)) {
+    max.age <- run (node=tree$edge[edge, 1])
+    min.age <- run (node=tree$edge[edge, 2])
+    res <- c ('max.age'=max.age, 'min.age'=min.age)
+  } else if (node != 'all') {
+    res <- run (node)
+  } else {
+    # else node == all, run on all nodes
+    nodes <- 1:(length (tree$tip.label) + tree$Nnode)
+    res <- mdply (.data = data.frame (node = nodes), .fun = run)
+    colnames (res)[2] <- 'age'
+  }
+  return (res)
 }
 
 #' @name getSister
@@ -175,21 +195,20 @@ getParent <- function (tree, node=NULL, tips=NULL) {
     # ... else they're numbers
     edges <- match (tips, tree$edge[,2])
   }
-  edges <- match (match (tips, tree$tip.label), tree$edge[,2])
   end.nodes <- tree$edge[edges, 1]
   term.node <- length (tree$tip.label) + 1
   while (TRUE){
+    if (sum (end.nodes[1] == end.nodes) == length (end.nodes)){
+      break
+    }
     end.nodes <- sort (end.nodes, TRUE)
     start.node <- end.nodes[1]
     edge <- match (start.node, tree$edge[,2])
     end.node <- tree$edge[edge,1]
     edges <- c(edges, edge)
     end.nodes <- c(end.nodes[!end.nodes %in% start.node], end.node)
-    if (sum (end.nodes[1] == end.nodes) == length (end.nodes)){
-      break
-    }
   }
-  return (end.node)
+  return (end.nodes[1])
 }
 
 #' @name getEdges
@@ -271,12 +290,6 @@ getEdges <- function (tree, node = NULL, tips = NULL, type = 1) {
       }
     } else {
       while (TRUE){
-        end.nodes <- sort (end.nodes, TRUE)
-        start.node <- end.nodes[1]
-        edge <- match (start.node, tree$edge[,2])
-        end.node <- tree$edge[edge,1]
-        edges <- c(edges, edge)
-        end.nodes <- c(end.nodes[!end.nodes %in% start.node], end.node)
         if (type == 2){
           if (sum (term.node == end.nodes) == length (end.nodes)){
             break
@@ -286,6 +299,12 @@ getEdges <- function (tree, node = NULL, tips = NULL, type = 1) {
             break
           }
         }
+        end.nodes <- sort (end.nodes, TRUE)
+        start.node <- end.nodes[1]
+        edge <- match (start.node, tree$edge[,2])
+        end.node <- tree$edge[edge,1]
+        edges <- c(edges, edge)
+        end.nodes <- c(end.nodes[!end.nodes %in% start.node], end.node)
       }
     }
     return (edges)
