@@ -616,7 +616,7 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
         for (j in 1:length (sbjctlist$lineages)) {
           matches[j] <- max (which (lineage %in% sbjctlist$lineages[[j]]))
         }
-        if (max (matches, na.rm=TRUE)[1] >= min.rank) {
+        if (max (matches, na.rm=TRUE)[1] > min.rank) {
           possibles <- as.vector (which (matches == max (matches, na.rm=TRUE)))
           paraenv$grow.tree <- .mnAddTip (tree=paraenv$grow.tree,
                                           tip.is=sbjctlist$resolved$tip.i[possibles],
