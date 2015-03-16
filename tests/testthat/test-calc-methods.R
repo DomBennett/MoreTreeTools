@@ -55,48 +55,103 @@ test_that ('calcDist([basic]) works', {
   expect_that (1, equals (distances[['score']]))
   expect_that (0.6516854, equals (distances[['dmat']]))  # max for 10 tips
 })
-
 test_that ('mapNames([basic]) works', {
   # names with some typos and species not in tree
   names <- c ('Gorila gorila', 'Allenopithecus nigrowiridiss', 'Macaca madeppy',
               'Pan paniscus', 'Hylobates pileatus', 'Pygathrix bieti', 'Pan troglodytes',
               'Hylobates madeuppy', 'Pongo pingu', 'Homo neanderthelensis', 'Homo sapins')
-  res <- mapNames (catarrhines, names, stats=TRUE)
-  expect_that ('phylo', equals (class (res$tree)))
-  # we expect the names to be resolved to the genus level and above
-  expect_more_than (res$stat$mean.rank, 29)
+  res <- mapNames (catarrhines, names)
+  # make sure it's a tree
+  expect_that ('phylo', equals (class (res)))
+  # make sure Homo n. has been placed on the pendant edge of Homo sapiens
+  node <- getParent (catarrhines, tips = c ('Homo sapiens'))
+  max.age <- getAge (catarrhines, node=node)
+  expect_less_than (cophenetic.phylo (res)['Homo sapins', 'Homo neanderthelensis'],
+               max.age)
 })
-
-test_that ('.searchTreeNames([basic]) works', {
-  # get search results for names descending from node 106
-  res.1 <- .searchTreeNames (tree=catarrhines, parent.node=106,
-                             previous=NULL, datasource=4)
-  # get results for all the children of the parent of 106
-  new.parent.node <- getParent (tree=catarrhines, node=106)
-  res.2 <- .searchTreeNames (tree=catarrhines, parent.node=new.parent.node,
-                             previous=res.1, datasource=4)
-  # more rows in res.2
-  expect_more_than (nrow (res.2$resolved), nrow (res.1$resolved))
-  # all names in res.1 should be in res.2
-  expect_true (all (as.vector (res.1$resolved$search.name) %in%
-                  as.vector (res.2$resolved$search.name)))
-  # not all names in res.2 should be in res.1
-  expect_false (all (as.vector (res.2$resolved$search.name) %in%
-                      as.vector (res.1$resolved$search.name)))
+test_that ('.mnMap([basic]) works', {
+  paraenv <- new.env (parent=emptyenv ())
+  paraenv$start.tree <- catarrhines
+  paraenv$grow.tree <- catarrhines
+  paraenv$datasource <- 4
+  paraenv$matching.names <- c ('Pan troglodytes')
+  paraenv$names <- c ('Pan troglodytes', 'Homo spiens', 'Gorilla grilla')
+  sbjctenv <- new.env (parent=emptyenv ())
+  MoreTreeTools:::.mnResolveUpdate (paraenv=paraenv, sbjctenv=sbjctenv)
+  qrylist <- MoreTreeTools:::.mnResolve (names=c ('Homo spiens', 'Gorilla grilla'),
+                                         paraenv)
+  sbjctenv$resolved <- rbind (sbjctenv$resolved, qrylist$resolved)
+  sbjctenv$lineages <- c (sbjctenv$lineages, qrylist$lineages)
+  resenv <- new.env (parent=emptyenv ())
+  resenv$trees <- list ()
+  MoreTreeTools:::.mnMap (resenv=resenv, qrylist=qrylist, sbjctenv=sbjctenv,
+                          paraenv=paraenv)
+  coph <- cophenetic.phylo (resenv$trees[[1]])
+  # expect chimp to be closer to human than gorilla
+  expect_more_than (coph['Gorilla grilla', 'Homo spiens'],
+                    coph['Pan troglodytes', 'Homo spiens'])
 })
-
-test_that ('.addTip([basic]) works', {
+test_that ('.mnResolve([basic]) works', {
+  paraenv <- list ()
+  paraenv$datasource <- 4
+  res <- MoreTreeTools:::.mnResolve (names=c ('Homo sapiens'), paraenv)
+  expect_that (class (res$resolved), equals ('data.frame'))
+  expect_that (class (res$lineages), equals ('list'))
+})
+test_that ('.mnResolveUpdate([basic]) works', {
+  # set up some environments
+  paraenv <- new.env (parent=emptyenv())
+  sbjctenv <- new.env (parent=emptyenv())
+  paraenv$grow.tree <- catarrhines
+  paraenv$matching.names <- sample (catarrhines$tip.label, 10)
+  # run twice, make sure second has more results
+  MoreTreeTools:::.mnResolveUpdate (paraenv, sbjctenv)
+  res1 <- nrow (sbjctenv$resolved)
+  MoreTreeTools:::.mnResolveUpdate (paraenv, sbjctenv)
+  res2 <- nrow (sbjctenv$resolved)
+  expect_more_than (res2, res1)
+})
+test_that ('.mnSample([basic]) works', {
+  # create a paraenv with tree
+  paraenv <- list ()
+  paraenv$grow.tree <- compute.brlen (rtree (10))
+  paraenv$matching.names <- paraenv$grow.tree$tip.label
+  # choose node up from root
+  node <- getSize (paraenv$grow.tree) + 2
+  # get all of its children and make already seen
+  paraenv$deja.vues <- getChildren (paraenv$grow.tree, node)
+  # names shouldn't have any deja.vues
+  names <- MoreTreeTools:::.mnSample (paraenv)
+  expect_false (any (names %in% paraenv$deja.vues))
+})
+test_that ('.mnTemporise([basic]) works', {
+  paraenv <- list ()
+  paraenv$datasource <- 4
+  record <- MoreTreeTools:::.mnResolve (names=c ('Homo sapiens', 'Gallus gallus'),
+                                        paraenv)
+  res <- MoreTreeTools:::.mnTemporise (record=record, tree=catarrhines)
+  # record was originally 2 rows
+  expect_that (nrow (record$resolved), equals (2))
+  # but temporise removes names not in tree
+  expect_that (nrow (res$resolved), equals (1))
+})
+test_that ('.mnAddTip([basic]) works', {
   tree <- compute.brlen (rtree (10))
-  tree <- .addTip (tree, tip.i=10, new.name='t11')
+  tree <- MoreTreeTools:::.mnAddTip (tree, tip.i=10, new.name='t11')
   expect_that (tree$tip.label[11], equals ('t11'))
 })
-
-test_that ('.extract([basic]) works', {
+test_that ('.mnEarlyReturn([basic]) works', {
   sample.names <- sample (catarrhines$tip.label, 10)
-  res <- .extract (tree=catarrhines, names=sample.names,
-                   stats=TRUE, matching.names=sample.names,
-                   n.fuzzy=0, ranks=vector())
-  expect_that (res$stat$p.names, equals (1))
-  expect_that ('phylo', equals (class (res$tree)))
-  expect_that (getSize (res$tree), equals (10))
+  res <- MoreTreeTools:::.mnEarlyReturn (tree=catarrhines,
+                                         names=sample.names,
+                                         iterations=2)
+  expect_that ('multiPhylo', equals (class (res)))
+  expect_that (getSize (res[[1]]), equals (10))
+})
+test_that ('.mnExtract([basic]) works', {
+  sample.names <- sample (catarrhines$tip.label, 10)
+  res <- MoreTreeTools:::.mnExtract (tree=catarrhines,
+                                     names=sample.names)
+  expect_that ('phylo', equals (class (res)))
+  expect_that (getSize (res), equals (10))
 })
