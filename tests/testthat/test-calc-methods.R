@@ -66,8 +66,9 @@ test_that ('mapNames([basic]) works', {
   # make sure Homo n. has been placed on the pendant edge of Homo sapiens
   node <- getParent (catarrhines, tips = c ('Homo sapiens'))
   max.age <- getAge (catarrhines, node=node)
-  expect_less_than (cophenetic.phylo (res)['Homo sapins', 'Homo neanderthelensis'],
-               max.age)
+  node <- getParent (res, tips = c ('Homo sapins'))
+  obs.age <- getAge (res, node=node)
+  expect_less_than (obs.age, max.age)
 })
 test_that ('.mnMap([basic]) works', {
   paraenv <- new.env (parent=emptyenv ())
