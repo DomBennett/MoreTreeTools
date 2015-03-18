@@ -35,8 +35,13 @@ addTip <- function (tree, edge, tip.name, node.age,
   if (new.tip.edge.length < 0) {
     stop ("Node age must be greater than tip age.")
   }
-  tree.node.ages <- getAge (tree)[ ,2]
-  new.node.edge.length <- tree.node.ages[node.1] - node.age
+  if (!is.null (tree$node.ages)) {
+    tree.node.ages <- tree$node.ages
+    node.1.age <- tree.node.ages[node.1]
+  } else {
+    node.1.age <- getAge (tree, node=node.1)
+  }
+  new.node.edge.length <- node.1.age - node.age
   if (new.node.edge.length < 0) {
     stop ("Node age is greater than edge.")
   }
