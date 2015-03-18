@@ -98,7 +98,7 @@ reduceTree <- function (tree, level, datasource = 4) {
 
 calcComPhyMets <- function(cmatrix, tree, min.spp = 2,
                            metrics = c ('PD1', 'PD2', 'PD3', 'PSV',
-                                     'PSD', 'PSE', 'PSC')) {
+                                        'PSD', 'PSE', 'PSC')) {
   calcPD <- function (i, type) {
     # get tips present in this site
     tips <- colnames (cmatrix)[cmatrix[i, ] > 0]
@@ -282,7 +282,7 @@ randCommData <- function (tree, nsites, nspp, lam = NULL) {
   ## TODO: write test
   ntips <- length (tree$tip.label)
   output <- matrix (rep(NA, ntips * nsites),
-                   ncol = ntips, nrow = nsites)
+                    ncol=ntips, nrow=nsites)
   colnames (output) <- tree$tip.label
   if (is.null (lam)) {
     for (i in 1:nsites) {
@@ -565,11 +565,21 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
     return (.mnEarlyReturn (tree, names, iterations))
   }
   # hold subject name resolution results in a single env
-  sbjctenv <- new.env (parent=emptyenv ())
-  .mnResolveUpdate (paraenv=paraenv, sbjctenv=sbjctenv)
+  if (!exists ('sbjctenv')) {
+    # allow user to specify sbjctenv outside of function
+    # this allows the user to run the function several times
+    # for different sets of names but with the same large tree
+    # while reducing number of searches required
+    sbjctenv <- new.env (parent=emptyenv ())
+    .mnResolveUpdate (paraenv=paraenv, sbjctenv=sbjctenv)
+  } else {
+    paraenv$deja.vues <- sbjctenv$resolved$search.name
+  }
   # add qrylist results to sbjctenv
-  sbjctenv$resolved <- rbind (sbjctenv$resolved, qrylist$resolved)
-  sbjctenv$lineages <- c (sbjctenv$lineages, qrylist$lineages)
+  pull <- !as.vector (qrylist$resolved$search.name) %in%
+    as.vector (sbjctenv$resolved$search.name)
+  sbjctenv$resolved <- rbind (sbjctenv$resolved, qrylist$resolved[pull, ])
+  sbjctenv$lineages <- c (sbjctenv$lineages, qrylist$lineages[pull])
   # hold all resulting trees and stats in a single env
   resenv <- new.env (parent=emptyenv ())
   resenv$trees <- list ()
@@ -597,42 +607,42 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   qrylist$lineages <- qrylist$lineages[randomised]
   paraenv$grow.tree <- paraenv$start.tree
   sbjctlist <- .mnTemporise(record=sbjctenv, tree=paraenv$grow.tree)  # convert to list
-  # LOOP -- until sbjctenv contains enough resolved names
-  while (nrow (qrylist$resolved) > 0) {
+  # LOOP until qrylist in grow.tree or sbjct names exhausted
+  while (TRUE) {
     if (nrow (sbjctlist$resolved) > 0) {
-      # calculate min rank
-      bool <- rep (TRUE, length (sbjctlist$lineages[[1]]))
-      for (lineage in sbjctlist$lineages[2:length (sbjctlist$lineages)]) {
-        bool <- bool & (sbjctlist$lineages[[1]] %in% lineage)
-      }
-      min.rank <- which (bool)  # this ensures the sampled tree is not too narrow
-      min.rank <- min.rank[length (min.rank)]
+      not.in.tree <- which (!as.vector (qrylist$resolved$search.name) %in%
+                              paraenv$grow.tree$tip.label)
       # loop through each in qrylist$resolved and match to sbjctlist$resolved
-      drop.vector <- rep (FALSE, nrow (qrylist$resolved))  # bool
-      for (i in 1:nrow (qrylist$resolved)) {
+      for (i in not.in.tree) {
+        # get lineage of the resovled qry name
         lineage <- qrylist$lineages[[i]]
-        # loop through each in tree lineages to find the best matching tip
-        matches <- rep (NA, length (sbjctlist$lineages))
-        for (j in 1:length (sbjctlist$lineages)) {
-          matches[j] <- max (which (lineage %in% sbjctlist$lineages[[j]]))
+        # match lineage to sbjct lineages
+        lsrs <- .mnGetLSR (qry=lineage, sbjcts=sbjctlist$lineages)
+        # of the most closely related lineages get the min dist -- calculated as
+        # the smallest lsrs, this makes sure that they do not
+        # form an in-group to the exclusion of the qry lineage
+        possibles <- as.vector (which (lsrs == max (lsrs)))
+        best.sbjcts <- sbjctlist$lineages[possibles]
+        if (length (best.sbjcts) > 1) {
+          min.lsr <- min (.mnGetLSR (qry=best.sbjcts[[1]],
+                                     sbjcts=best.sbjcts[-1]))
+        } else {
+          # if there is only 1, it must be the best match in tree
+          min.lsr <- max (lsrs)
         }
-        if (max (matches, na.rm=TRUE)[1] > min.rank) {
-          possibles <- as.vector (which (matches == max (matches, na.rm=TRUE)))
+        if (max (lsrs) >= min.lsr) {
           paraenv$grow.tree <- .mnAddTip (tree=paraenv$grow.tree,
                                           tip.is=sbjctlist$resolved$tip.i[possibles],
                                           new.name=as.character (
                                             qrylist$resolved$search.name[i]))
           # update tip.i in sbjctlist
           sbjctlist <- .mnTemporise(record=sbjctlist, tree=paraenv$grow.tree)
-          drop.vector[i] <- TRUE
         }
       }
-      # drop resolved query names now accounted for
-      qrylist$resolved <- qrylist$resolved[!drop.vector, ]
-      qrylist$lineages <- qrylist$lineages[!drop.vector]
     }
-    # if all names in tree sampled, exit
-    if (length (paraenv$deja.vues) == getSize (paraenv$tree)) {
+    # if all qry names in grow.tree or all names in tree sampled
+    if (all (as.vector (qrylist$resolved$search.name) %in% paraenv$grow.tree$tip.label) |
+          all (paraenv$start.tree$tip.label %in% paraenv$deja.vues)) {
       break
     }
     # if haven't broken out, update sbjctenv and extract new sbjctlist
@@ -651,10 +661,20 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
                                         datasource=paraenv$datasource))
   # drop NAs
   res$resolved <- res$resolved[!is.na (res$resolved$name.string), ]
+  # drop those w/o lineage
+  res$resolved <- res$resolved[res$resolved$lineage != '', ]
   # separate lineages
   res['lineages'] <- list (strsplit (as.vector (res$resolved$lineage),
                                      '\\|'))
   return (res)
+}
+.mnGetLSR <- function (qry, sbjcts) {
+  # get lowest shared ranks between qry lineage and subject lineages
+  tds <- rep (NA, length (sbjcts))
+  for (i in 1:length (sbjcts)) {
+    tds[i] <- max (which (qry %in% sbjcts[[i]]))
+  }
+  tds
 }
 .mnSample <- function (paraenv) {
   # sample names from a tree in a way to reduce searching
@@ -719,8 +739,8 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
     # find the parent node of all the matching tips
     children <- tree$tip.label[tip.is]
     parent.node <- getParent (tree, tips=children)
-    # get all descending edges + supporting edge
-    edges <- getEdges (tree, node=parent.node)
+    # get descending and supporting edges
+    edges <- which (tree$edge[ ,1] == parent.node)
     edges <- c (edges, which (tree$edge[ ,2] == parent.node))
     # choose edge at random, bias sample based on branch length
     edge <- sample (edges, size=1, prob=tree$edge.length[edges])
