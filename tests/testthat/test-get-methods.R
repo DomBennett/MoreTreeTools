@@ -1,20 +1,20 @@
-## Test get methods
-## D.J. Bennett
-## 05/05/2014
+# Test get-methods
+# D.J. Bennett
+# 05/05/2014
 
-## Libraries
+# LIBS
 library (MoreTreeTools)
 library (testthat)
 
-## Test data
+# TEST DATA
 data ('hominoids')
 hominids <- c ("Pongo pygmaeus", "Gorilla gorilla",
-     "Homo sapiens", "Pan paniscus",
-     "Pan troglodytes")
+               "Homo sapiens", "Pan paniscus",
+               "Pan troglodytes")
 hominins <- c ('Homo sapiens', 'Gorilla gorilla',
                'Pan troglodytes', 'Pan paniscus')
 hominins.tree <- drop.tip (hominoids, tip = hominoids$tip.label
-                      [!hominoids$tip.label %in% hominins])
+                           [!hominoids$tip.label %in% hominins])
 clade.node <- c (5, 6, 7, 1, 2, 3, 4)
 clade.children <- list ('5' = c ("Gorilla gorilla", "Homo sapiens",
                                  "Pan paniscus", "Pan troglodytes"),
@@ -26,7 +26,7 @@ clade.children <- list ('5' = c ("Gorilla gorilla", "Homo sapiens",
 hominins.clades <- list (clade.children = clade.children,
                          clade.node = clade.node)
 
-## Running tests
+# RUNNING
 context ('Testing \'get-methods\'')
 test_that ('getChildren([basic]) works',{
   expect_that (getChildren (hominoids, 20),

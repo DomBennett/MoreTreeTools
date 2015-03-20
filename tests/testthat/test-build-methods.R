@@ -1,16 +1,16 @@
-## Test tree construction (which btw is really hard...)
-## D.J. Bennett
-## 16/06/2014
+# Test build-methods
+# D.J. Bennett
+# 16/06/2014
 
-## Libraries
+# LIBS
 library (MoreTreeTools)
 library (testthat)
 
-## Test data
+# TEST DATA
 data ('hominoids')
 
-## Running tests
-context ('Testing \'tree-construction\'')
+# RUNNING
+context ('Testing \'build-methods\'')
 test_that ('addTip([basic]) works', {
   # simply show that an errors are thrown and handled
   expect_that (addTip (hominoids, edge = 1, tip.age = 10,

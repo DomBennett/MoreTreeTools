@@ -1,17 +1,17 @@
-## Test api tools
-## D.J. Bennett
-## 11/06/2014
+# Test server-methods
+# D.J. Bennett
+# 11/06/2014
 
-## Libraries
+# LIBS
 library (MoreTreeTools)
 library (testthat)
 
-## Test data
+# TEST DATA
 data ('hominoids')
 hominoids <- hominoids$tip.label
 
-## Running tests
-context ('Testing \'api-tools\'')
+# RUNNING
+context ('Testing \'server-tools\'')
 test_that ('.safeFromJSON([basic]) works', {
   # simply show that an error is thrown and handled
   expect_that (

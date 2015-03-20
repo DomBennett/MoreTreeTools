@@ -1,12 +1,12 @@
-## Test api tools
-## D.J. Bennett
-## 13/06/2014
+# Test misc-methods
+# D.J. Bennett
+# 13/06/2014
 
-## Libraries
+# LIBS
 library (MoreTreeTools)
 library (testthat)
 
-## Test data
+# TEST DATA
 test.lineages <- 
   list (c ('kingdomA', 'phylumA', 'classA',
            'orderA', 'familyA', 'genusA',
@@ -39,7 +39,7 @@ test.lineages <-
            'orderB', 'familyD', 'genusF',
            'speciesJ'))
 
-## Running tests
+# RUNNING
 context ('Testing \'misc\'')
 test_that ('.findClade([basic]) works', {
   # class A is shared by all test species
