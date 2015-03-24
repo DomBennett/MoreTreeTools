@@ -172,8 +172,10 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   # drop those w/o lineage
   res$resolved <- res$resolved[res$resolved$lineage != '', ]
   # separate lineages
-  res['lineages'] <- list (strsplit (as.vector (res$resolved$lineage),
-                                     '\\|'))
+  if (nrow (res$resolved) > 0) {
+    res['lineages'] <- list (strsplit (as.vector (res$resolved$lineage),
+                                       '\\|'))
+  }
   return (res)
 }
 .mnGetLSR <- function (qry, sbjcts) {
@@ -196,10 +198,10 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
       children <- children[!children %in% paraenv$deja.vues]
       return (children)
     }
-    node <- getParent (tree, node=node)
     if (node == getSize (tree) + 1) {
       break
     }
+    node <- getParent (tree, node=node)
   }
   vector ()
 }
