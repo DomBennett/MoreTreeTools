@@ -79,19 +79,19 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
                      lineage=lineage, lineage.ids=lineage.ids,
                      rank=rank, taxid=taxid,
                      match.type=match.type, prescore=prescore,
-                     score=score)
-  failed.bool <- is.na (res$name.string)
-  if (genus & any (failed.bool)) {
+                     score=score, stringsAsFactors=FALSE)
+  failed <- which (is.na (res$name.string))
+  if (genus & length (failed) > 0) {
     # if genus, search just genus names
-    genus.names <- sub ('\\s+.*', '', res$search.name[failed.bool])
+    genus.names <- sub ('\\s+.*', '', res$search.name[failed])
     genus.res <- taxaResolve (genus.names, batch, datasource, genus=FALSE)
     # replace in original results, all slots except search.name
-    res[failed.bool, 2:ncol (res)] <- genus.res[ ,-1]
+    res[failed,-1] <- genus.res[ ,-1]
   }
   return (res)
 }
 
-.safeFromJSON <- function (url, max.trys=10, power=2) {
+.safeFromJSON <- function (url, max.trys=12, power=2) {
   # Safe wrapper for fromJSON
   trys <- 0
   waittime <- 2
@@ -99,7 +99,7 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
     json.obj <- try (fromJSON (url), silent = TRUE)
     if (class (json.obj) == 'try-error') {
       cat ('---- Connection failed: trying again in [', waittime,
-           '----\n')
+           's]----\n', sep='')
       trys <- trys + 1
       Sys.sleep (waittime)
       waittime <- waittime*power
