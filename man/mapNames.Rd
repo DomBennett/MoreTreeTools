@@ -37,6 +37,9 @@ be best to generate a distribution of trees that represent the range of possible
 relationships for the names and tree given. If iterations is greater than 1, instead of a
 single tree, a multiPhylo object of length iterations is returned representing this
 range of possible mappings.
+
+For non-time-callibrated or trees without branch lengths, the function using taxonomic
+distance for random placement and returns a tree without branch lengths.
 }
 \examples{
 # bring in the catarrhines data

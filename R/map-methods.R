@@ -18,6 +18,9 @@
 #' single tree, a multiPhylo object of length iterations is returned representing this
 #' range of possible mappings.
 #' 
+#' For non-time-callibrated or trees without branch lengths, the function using taxonomic
+#' distance for random placement and returns a tree without branch lengths.
+#' 
 #' @template base_template
 #' @param names vector of names of tips to be extracted
 #' @param fuzzy boolean, if true will search Global Names Resolver online
@@ -45,9 +48,12 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   if (!is.vector (names) && length (names) <= 1) {
     stop ('Names must be a vector of more than 1 character string')
   }
-  if (is.null (tree$edge.length)) {
-    warning ('No branch lengths in tree, branch lengths added with `compute.brlen()`')
-    tree <- compute.brlen (tree)
+  if (is.null (tree$edge.length) || !is.ultrametric (tree)) {
+    # use taxonomic branch distances if branches are not time callibrated
+    tree$edge.length <- rep (1, nrow (tree$edge))
+    ultrametric <- FALSE
+  } else {
+    ultrametric <- TRUE
   }
   # INIT
   tree$tip.label <- gsub ('_', ' ', tree$tip.label)
@@ -57,11 +63,12 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   nonmatching.names <- names[!names %in% tree$tip.label]
   # stop now if all names match names in tree or fuzzy is false
   if (!fuzzy || length (matching.names) == length (names)) {
-    return (.mnEarlyReturn (tree, names, iterations))
+    return (.mnEarlyReturn (tree, names, iterations, ultrametric))
   }
   # VARIABLES AND ENVIRONMENTS
   # place all parameters in an environment to save arguments
   paraenv <- new.env (parent=emptyenv ())
+  paraenv$ultrametric <- ultrametric
   paraenv$start.tree <- tree
   paraenv$grow.tree <- tree
   paraenv$datasource <- datasource
@@ -70,7 +77,7 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   # hold query name resolution results in a list
   qrylist <- .mnResolve (names=nonmatching.names, paraenv=paraenv)
   if (!nrow (qrylist$resolved) > 0) {  # stop now if none resolved
-    return (.mnEarlyReturn (tree, names, iterations))
+    return (.mnEarlyReturn (tree, names, iterations, ultrametric))
   }
   # hold subject name resolution results in a single env
   if (!exists ('sbjctenv')) {
@@ -142,7 +149,8 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
           paraenv$grow.tree <- .mnAddTip (tree=paraenv$grow.tree,
                                           tip.is=sbjctlist$resolved$tip.i[possibles],
                                           new.name=as.character (
-                                            qrylist$resolved$search.name[i]))
+                                            qrylist$resolved$search.name[i]),
+                                          ultrametric=paraenv$ultrametric)
           # update tip.i in sbjctlist
           sbjctlist <- .mnTemporise(record=sbjctlist, tree=paraenv$grow.tree)
         }
@@ -158,7 +166,8 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
     sbjctlist <- .mnTemporise(record=sbjctenv, tree=paraenv$grow.tree)
   }
   # save results to resenv
-  tree <- .mnExtract (tree=paraenv$grow.tree, names=paraenv$names)
+  tree <- .mnExtract (tree=paraenv$grow.tree, names=paraenv$names,
+                      ultrametric=paraenv$ultrametric)
   resenv$trees <- c (resenv$trees, list (tree))
 }
 .mnResolve <- function (names, paraenv) {
@@ -238,7 +247,7 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   res$lineages <- res$lineages[!not.in.tree]
   return (res)
 }
-.mnAddTip <- function (tree, tip.is, new.name) {
+.mnAddTip <- function (tree, tip.is, new.name, ultrametric) {
   # add new tip
   if (length (tip.is) == 1) {
     # add to the pendant edge at a random time point
@@ -260,22 +269,30 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   node.age <- runif (n=1, min=age.range['min.age'],
                      max=age.range['max.age'])
   tree <- addTip (tree, edge=edge, tip.name=new.name, node.age=node.age)
+  if (!ultrametric) {
+    # reset all edges to length 1 if not ultrametric
+    tree$edge.length <- rep (1, nrow (tree$edge))
+  }
   return (tree)
 }
-.mnExtract <- function (tree, names) {
+.mnExtract <- function (tree, names, ultrametric) {
   # return tree representing names, also stats
   if (sum (names %in% tree$tip.label) > 1) {
     res.tree <- drop.tip (tree, tip = tree$tip.label[!tree$tip.label %in% names])
+    if (!ultrametric) {
+      # return wo branch lengths if tree given wasn't ultrametric
+      res.tree$edge.length <- NULL
+    }
     return (res.tree)
   } else {
     warning ('Too few names could be mapped to tree')
     return (NA)
   }
 }
-.mnEarlyReturn <- function (tree, names, iterations) {
+.mnEarlyReturn <- function (tree, names, iterations, ultrametric) {
   # if mapNames returns tree early, return an object
   #  that was expect i.e. phylo or multiphylo
-  tree <- .mnExtract (tree, names)
+  tree <- .mnExtract (tree, names, ultrametric)
   if (iterations == 1) {
     return (tree)
   } else {
