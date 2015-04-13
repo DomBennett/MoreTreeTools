@@ -39,7 +39,7 @@ addTip <- function (tree, edge, tip.name, node.age,
     tree.node.ages <- tree$node.ages
     node.1.age <- tree.node.ages[node.1]
   } else {
-    node.1.age <- getAge (tree, node=node.1)
+    node.1.age <- getAge (tree, node=node.1)$age
   }
   new.node.edge.length <- node.1.age - node.age
   if (new.node.edge.length < 0) {

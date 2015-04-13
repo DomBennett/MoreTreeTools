@@ -8,6 +8,7 @@ library (testthat)
 
 # TEST DATA
 data ('catarrhines')
+catarrhines$edge.length[145] <- 10  # make sure it works for non-ultrametric trees
 
 # RUNNING
 context ('Testing \'map-methods\'')
@@ -21,9 +22,9 @@ test_that ('mapNames([basic]) works', {
   expect_that ('phylo', equals (class (res)))
   # make sure Homo n. has been placed on the pendant edge of Homo sapiens
   node <- getParent (catarrhines, tips = c ('Homo sapiens'))
-  max.age <- getAge (catarrhines, node=node)
+  max.age <- getAge (catarrhines, node=node)$age
   node <- getParent (res, tips = c ('Homo sapins'))
-  obs.age <- getAge (res, node=node)
+  obs.age <- getAge (res, node=node)$age
   expect_less_than (obs.age, max.age)
 })
 test_that ('.mnMap([basic]) works', {
@@ -32,10 +33,10 @@ test_that ('.mnMap([basic]) works', {
   paraenv$grow.tree <- catarrhines
   paraenv$datasource <- 4
   paraenv$matching.names <- c ('Pan troglodytes')
-  paraenv$names <- c ('Pan troglodytes', 'Homo spiens', 'Gorilla grilla')
+  paraenv$names <- c ('Pan troglodytes', 'Homo spiens', 'Hylobates')
   sbjctenv <- new.env (parent=emptyenv ())
   MoreTreeTools:::.mnResolveUpdate (paraenv=paraenv, sbjctenv=sbjctenv)
-  qrylist <- MoreTreeTools:::.mnResolve (names=c ('Homo spiens', 'Gorilla grilla'),
+  qrylist <- MoreTreeTools:::.mnResolve (names=c ('Homo spiens', 'Hylobates'),
                                          paraenv)
   sbjctenv$resolved <- rbind (sbjctenv$resolved, qrylist$resolved)
   sbjctenv$lineages <- c (sbjctenv$lineages, qrylist$lineages)
@@ -45,7 +46,7 @@ test_that ('.mnMap([basic]) works', {
                           paraenv=paraenv)
   coph <- cophenetic.phylo (resenv$trees[[1]])
   # expect chimp to be closer to human than gorilla
-  expect_more_than (coph['Gorilla grilla', 'Homo spiens'],
+  expect_more_than (coph['Hylobates', 'Homo spiens'],
                     coph['Pan troglodytes', 'Homo spiens'])
 })
 test_that ('.mnResolve([basic]) works', {
@@ -61,9 +62,10 @@ test_that ('.mnResolveUpdate([basic]) works', {
   sbjctenv <- new.env (parent=emptyenv())
   paraenv$grow.tree <- catarrhines
   paraenv$matching.names <- sample (catarrhines$tip.label, 10)
-  # run twice, make sure second has more results
+  # run a few times, make sure second has more results
   MoreTreeTools:::.mnResolveUpdate (paraenv, sbjctenv)
   res1 <- nrow (sbjctenv$resolved)
+  MoreTreeTools:::.mnResolveUpdate (paraenv, sbjctenv)
   MoreTreeTools:::.mnResolveUpdate (paraenv, sbjctenv)
   res2 <- nrow (sbjctenv$resolved)
   expect_more_than (res2, res1)
