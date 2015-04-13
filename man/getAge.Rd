@@ -9,15 +9,19 @@ getAge(tree, node = "all", edge = NULL)
 \arguments{
 \item{tree}{phylogenetic tree (ape class)}
 
-\item{node}{number indicating node (default 'all')}
+\item{node}{number(s) indicating node(s) (default 'all')}
+
+\item{edge}{number(s) indicating edge(s) (default NULL)}
 }
 \description{
-Return age of tip, internal node or age range of an edge
- (so long as the tree provided is time calibrated with branch lengths).
+Return data.frame of age of tip, internal node or age range of
+an edge (so long as the tree provided is time calibrated with branch lengths).
 }
 \details{
 First calculates the root to tip distance, then calculates
 node age by subtracting this distance from the root to node distance.
+If tree provided is not ultrametric, root to tip distance is the distance
+from the root to the most distal tip.
 If edge provided returns the max and min age of each node of edge.
 If \code{node} equals 'all', will return a dataframe for all nodes.
 }

@@ -64,14 +64,17 @@ getSize <- function (tree, type = c ('ntips', 'pd', 'rtt')) {
 
 #' @name getAge
 #' @title Return age of node or edge
-#' @description Return age of tip, internal node or age range of an edge
-#'  (so long as the tree provided is time calibrated with branch lengths).
+#' @description Return data.frame of age of tip, internal node or age range of
+#' an edge (so long as the tree provided is time calibrated with branch lengths).
 #' @details First calculates the root to tip distance, then calculates
 #' node age by subtracting this distance from the root to node distance.
+#' If tree provided is not ultrametric, root to tip distance is the distance
+#' from the root to the most distal tip.
 #' If edge provided returns the max and min age of each node of edge.
 #' If \code{node} equals 'all', will return a dataframe for all nodes.
 #' @template base_template
-#' @param node number indicating node (default 'all')
+#' @param node number(s) indicating node(s) (default 'all')
+#' @param edge number(s) indicating edge(s) (default NULL)
 #' @export
 #' @examples
 #' data ('catarrhines')
@@ -99,8 +102,13 @@ getAge <- function (tree, node='all', edge=NULL) {
     }
     return (tree.age - sum (tree$edge.length[edges]))
   }
+  runEdge <- function (edge) {
+    max.age <- run (node=tree$edge[edge, 1])
+    min.age <- run (node=tree$edge[edge, 2])
+    data.frame (max.age, min.age)
+  }
   # SAFETY CHECK
-  if (node != 'all') {
+  if (node[1] != 'all') {
     if (!is.numeric (node) || node > getSize (tree) + tree$Nnode) {
       stop ('Node must either be `all` or a number specifying a node in tree.')
     }
@@ -112,11 +120,10 @@ getAge <- function (tree, node='all', edge=NULL) {
   }
   tree.age <- max (diag (vcv.phylo (tree)))
   if (!is.null (edge)) {
-    max.age <- run (node=tree$edge[edge, 1])
-    min.age <- run (node=tree$edge[edge, 2])
-    res <- c ('max.age'=max.age, 'min.age'=min.age)
-  } else if (node != 'all') {
-    res <- run (node)
+    res <- mdply (.data = data.frame (edge=edge), .fun = runEdge)
+  } else if (node[1] != 'all') {
+    res <- mdply (.data = data.frame (node=node), .fun = run)
+    colnames (res)[2] <- 'age'
   } else {
     # else node == all, run on all nodes
     nodes <- 1:(length (tree$tip.label) + tree$Nnode)
