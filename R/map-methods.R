@@ -48,6 +48,8 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   if (!is.vector (names) && length (names) <= 1) {
     stop ('Names must be a vector of more than 1 character string')
   }
+  #TODO what to do if no branch lengths?
+  #TODO what to do about nodelabels
   # INIT
   tree$tip.label <- gsub ('_', ' ', tree$tip.label)
   names <- gsub ('_', ' ', names)
