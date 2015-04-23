@@ -1,25 +1,39 @@
 #' @name reLoad
 #' @title Change loading of tree
-#' @description # Return a tree with loading changed by factor.
+#' @description Return a tree with loading changed by factor.
 #' @details The functions works by adding and removing branch length
 #' between parent and children branches. The amount by which the branch
 #' lengths are changed is determiend by factor.
 #' @template base_template
-#' @param factor proportion by which loading is changed, positive values
-#' increase loading, negative values decrease it.
+#' @param factor proportion (-1 to +1) by which loading is changed,
+#' positive values increase loading, negative values decrease it.
 #' @export
 #' @examples
 #' # Create balanced tree, plot positively and negatively reloaded
 #' n <- 16
 #' par (mfrow = c (2, 2), mar = c (1, 1, 1, 1))
 #' tree <- compute.brlen (stree (n, 'balanced'))
-#' plot (reLoad (tree, factor = -0.9), show.tip.label=FALSE, edge.width=2)
-#' plot (reLoad (tree, factor = 0.9), show.tip.label=FALSE, edge.width=2)
+#' tree$root.edge <- 0.1  # add a root edge
+#' plot (reLoad (tree, factor = -0.9), show.tip.label=FALSE,
+#'       edge.width=2, root.edge=TRUE)
+#' plot (reLoad (tree, factor = 0.9), show.tip.label=FALSE,
+#'       edge.width=2, root.edge=TRUE)
 
 reLoad <- function (tree, factor) {
   # Return a tree with the loading changed by factor
   downLoad <- function (node) {
     # decrease tree loading
+    # for root node, use root edge
+    if (node == getSize (tree) + 1) {
+      # get the following edges
+      following.edges <- tree$edge[ ,1] == node
+      # calculate amount to change the preceding and following edges
+      change.by <- tree$root.edge * factor
+      # add and remove by change.by
+      tree$root.edge <- tree$root.edge - change.by
+      tree$edge.length[following.edges] <-
+        tree$edge.length[following.edges] + change.by
+    }
     # get the preceding edge for node
     preceding.edge <- tree$edge[ ,2] == node
     if (any (preceding.edge)) {
@@ -37,6 +51,17 @@ reLoad <- function (tree, factor) {
   }
   upLoad <- function (node) {
     # increase tree loading
+    # for root node, use root edge
+    if (node == getSize (tree) + 1) {
+      # get the following edges
+      following.edges <- tree$edge[ ,1] == node
+      # calculate amount to change the preceding and following edges
+      change.by <- tree$root.edge * factor
+      # add and remove by change.by
+      tree$root.edge <- tree$root.edge + change.by
+      tree$edge.length[following.edges] <-
+        tree$edge.length[following.edges] - change.by
+    }
     # get the following edges for node
     following.edges <- tree$edge[ ,1] == node
     if (any (following.edges)) {
@@ -51,6 +76,14 @@ reLoad <- function (tree, factor) {
         tree$edge.length[following.edges] - change.by
     }
     tree <<- tree
+  }
+  # make sure it is rooted
+  if (!is.rooted (tree)) {
+    stop ('Tree must be rooted!')
+  }
+  # make sure tree has root edge
+  if (is.null (tree$root.edge)) {
+    tree$root.edge <- 0
   }
   # list internal nodes
   internal.nodes <- length (tree$tip.label)+1:
