@@ -9,11 +9,11 @@ reLoad(tree, factor)
 \arguments{
 \item{tree}{phylogenetic tree (ape class)}
 
-\item{factor}{proportion by which loading is changed, positive values
-increase loading, negative values decrease it.}
+\item{factor}{proportion (-1 to +1) by which loading is changed,
+positive values increase loading, negative values decrease it.}
 }
 \description{
-# Return a tree with loading changed by factor.
+Return a tree with loading changed by factor.
 }
 \details{
 The functions works by adding and removing branch length
@@ -25,8 +25,11 @@ lengths are changed is determiend by factor.
 n <- 16
 par (mfrow = c (2, 2), mar = c (1, 1, 1, 1))
 tree <- compute.brlen (stree (n, 'balanced'))
-plot (reLoad (tree, factor = -0.9), show.tip.label=FALSE, edge.width=2)
-plot (reLoad (tree, factor = 0.9), show.tip.label=FALSE, edge.width=2)
+tree$root.edge <- 0.1  # add a root edge
+plot (reLoad (tree, factor = -0.9), show.tip.label=FALSE,
+      edge.width=2, root.edge=TRUE)
+plot (reLoad (tree, factor = 0.9), show.tip.label=FALSE,
+      edge.width=2, root.edge=TRUE)
 }
 \references{
 No references yet!
