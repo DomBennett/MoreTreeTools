@@ -26,6 +26,8 @@
 #' @param fuzzy boolean, if true will search Global Names Resolver online
 #' @param datasource GNR datasource ID, default 4 for NCBI
 #' @param iterations how many times to repeat?
+#' @param resolve.list pre-resolved names generated with mapNamesPreDownload,
+#' default NULL
 #' @export
 #' @examples
 #' # bring in the catarrhines data
@@ -40,7 +42,7 @@
 #' plot (hominid.map)
 
 mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
-                      iterations=1) {
+                      iterations=1, resolve.list=NULL) {
   # SAFETY CHECK
   if (iterations < 1) {
     stop ('Iterations must be >=1')
@@ -68,36 +70,41 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   paraenv$datasource <- datasource
   paraenv$matching.names <- matching.names
   paraenv$names <- names
-  # hold query name resolution results in a list
-  qrylist <- .mnResolve (names=nonmatching.names, paraenv=paraenv)
-  if (!nrow (qrylist$resolved) > 0) {  # stop now if none resolved
-    return (.mnEarlyReturn (tree, names, iterations))
-  }
-  # hold subject name resolution results in a single env
-  if (!exists ('sbjctenv')) {
-    # allow user to specify sbjctenv outside of function
-    # this allows the user to run the function several times
-    # for different sets of names but with the same large tree
-    # while reducing number of searches required
+  # get query and subject resolved names
+  if (!is.null (resolve.list)) {
+    # if resolve.list provided, no need to do any searches
+    # unpack resolved names into qrylist and sbjctenv
+    pull <- resolve.list$resolved$search.name %in% nonmatching.names
+    qrylist <- list ()
+    qrylist$resolved <- resolve.list$resolved[pull, ]
+    qrylist$lineages <- resolve.list$lineages[pull]
+    sbjctenv <- new.env (parent=emptyenv ())
+    sbjctenv$resolved <- resolve.list$resolved
+    sbjctenv$lineages <- resolve.list$lineages
+    paraenv$deja.vues <- tree$tip.label
+  } else {
+    # hold query name resolution results in a list
+    qrylist <- .mnResolve (names=nonmatching.names, paraenv=paraenv)
+    if (!nrow (qrylist$resolved) > 0) {  # stop now if none resolved
+      return (.mnEarlyReturn (tree, names, iterations))
+    }
+    # hold subject name resolution results in a single env
     sbjctenv <- new.env (parent=emptyenv ())
     .mnResolveUpdate (paraenv=paraenv, sbjctenv=sbjctenv)
-  } else {
-    paraenv$deja.vues <- sbjctenv$resolved$search.name
+    # add qrylist results to sbjctenv
+    pull <- !as.vector (qrylist$resolved$search.name) %in%
+      as.vector (sbjctenv$resolved$search.name)
+    sbjctenv$resolved <- rbind (sbjctenv$resolved, qrylist$resolved[pull, ])
+    sbjctenv$lineages <- c (sbjctenv$lineages, qrylist$lineages[pull])
   }
-  # add qrylist results to sbjctenv
-  pull <- !as.vector (qrylist$resolved$search.name) %in%
-    as.vector (sbjctenv$resolved$search.name)
-  sbjctenv$resolved <- rbind (sbjctenv$resolved, qrylist$resolved[pull, ])
-  sbjctenv$lineages <- c (sbjctenv$lineages, qrylist$lineages[pull])
   # hold all resulting trees and stats in a single env
   resenv <- new.env (parent=emptyenv ())
   resenv$trees <- list ()
   # ITERATE
-  for (i in 1:iterations) {
-    # loop through for each iteration, write results to resenv
-    .mnMap (resenv=resenv, qrylist=qrylist, sbjctenv=sbjctenv,
-            paraenv=paraenv)
-  }
+  # loop through for each iteration, write results to resenv
+  m_ply (.data=data.frame(iteration=1:iterations), .fun=.mnMap,
+         resenv=resenv, qrylist=qrylist, sbjctenv=sbjctenv,
+         paraenv=paraenv)
   # RETURN
   if (length (resenv$trees) > 1) {
     trees <- resenv$trees
@@ -108,10 +115,11 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   return (trees)
 }
 # HIDDEN mapNames functions
-.mnMap <- function (resenv, qrylist, sbjctenv, paraenv) {
+.mnMap <- function (iteration, resenv, qrylist, sbjctenv, paraenv) {
   # INIT
   # randomise order to prevent order bias
   randomised <- sample (1:nrow (qrylist$resolved))
+  print (randomised)
   qrylist$resolved <- qrylist$resolved[randomised, ]
   qrylist$lineages <- qrylist$lineages[randomised]
   paraenv$grow.tree <- paraenv$start.tree
@@ -190,7 +198,11 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
 .mnSample <- function (paraenv) {
   # sample names from a tree in a way to reduce searching
   tree <- paraenv$grow.tree
-  tip <- sample (paraenv$matching.names, 1)
+  if (length (paraenv$matching.names) > 1) {
+    tip <- sample (paraenv$matching.names, 1)
+  } else {
+    tip <- sample (tree$tip.label, 1)
+  }
   node <- tree$edge[tree$edge[ ,2] == which (tip == tree$tip.label), 1]
   while (TRUE) {
     children <- getChildren (tree, node=node)
@@ -297,4 +309,39 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
     class (trees) <- 'multiPhylo'
     return (trees)
   }
+}
+
+#' @name mapNamesPreDownload
+#' @title Download names for mapNames()
+#' @description Run this function before running mapNames() when
+#' mapping multiple sets of names.
+#' @details mapNames() will try to minimise the number of searches it
+#' needs to do to map names given to a phylogenetic tree. If you're running
+#' mapNames() multiple times for different vectors of names, it may be faster
+#' to resolve names via this function and then pass these to mapNames()
+#' 
+#' @template base_template
+#' @param names vector of names to be resolved and all names in tree to be mapped
+#' @param datasource GNR datasource ID, default 4 for NCBI
+#' @examples
+#' # bring in the catarrhines data
+#' data ('catarrhines')
+#' names1 <- c ('Homo sapiens', 'Pongo pygmaeus', 'Gorilla gorila', 'Pan troglodytes',
+#'              'Homo erectus', 'Homo neanderthalensis', 'Hylobates')
+#' names2 <- c ('Hylobates', 'Homo', 'Macca')
+#' resolve.list <- mapNamesPreDownload (names=c (names1, names2, catarrhines$tip.label),
+#'                                      datasource=4)
+#' map1 <- mapNames (tree=catarrhines, names=names1, resolve.list=resolve.list)
+#' map2 <- mapNames (tree=catarrhines, names=names2, resolve.list=resolve.list)
+#' plot (map1)
+#' plot (map2)
+
+mapNamesPreDownload <- function (names, datasource=4) {
+  paraenv <- list ('datasource'=datasource)
+  # parse names
+  names <- unique (names)
+  names <- gsub ('_', ' ', names)
+  # search names
+  resolved.list <- .mnResolve (names, paraenv)
+  return (resolved.list)
 }

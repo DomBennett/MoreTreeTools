@@ -4,7 +4,8 @@
 \alias{mapNames}
 \title{Map names to a tree}
 \usage{
-mapNames(tree, names, fuzzy = TRUE, datasource = 4, iterations = 1)
+mapNames(tree, names, fuzzy = TRUE, datasource = 4, iterations = 1,
+  resolve.list = NULL)
 }
 \arguments{
 \item{tree}{phylogenetic tree (ape class)}
@@ -16,6 +17,9 @@ mapNames(tree, names, fuzzy = TRUE, datasource = 4, iterations = 1)
 \item{datasource}{GNR datasource ID, default 4 for NCBI}
 
 \item{iterations}{how many times to repeat?}
+
+\item{resolve.list}{pre-resolved names generated with mapNamesPreDownload,
+default NULL}
 }
 \description{
 Map names to a tree with the option of searching online
