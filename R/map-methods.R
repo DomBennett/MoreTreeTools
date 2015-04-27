@@ -50,14 +50,18 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   if (!is.vector (names) && length (names) <= 1) {
     stop ('Names must be a vector of more than 1 character string')
   }
-  #TODO what to do if no branch lengths?
-  #TODO what to do about nodelabels
+  if (!class (tree) %in%  c ('phylo', 'multiPhylo')) {
+    stop ('Tree must be phylo or multiPhylo')
+  }
+  #TODO update addTip to handle node.label, for now drop node.label
   # INIT
-  tree$tip.label <- gsub ('_', ' ', tree$tip.label)
+  # drop underscores, check for branch lengths and drop node labels
+  tree <- .mnClean (tree)
   names <- gsub ('_', ' ', names)
   # find matching and non-matching names
-  matching.names <- names[names %in% tree$tip.label]
-  nonmatching.names <- names[!names %in% tree$tip.label]
+  tip.labels <- .mnGetNames (tree)
+  matching.names <- names[names %in% tip.labels]
+  nonmatching.names <- names[!names %in% tip.labels]
   # stop now if all names match names in tree or fuzzy is false
   if (!fuzzy || length (matching.names) == length (names)) {
     return (.mnEarlyReturn (tree, names, iterations))
@@ -65,8 +69,13 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   # VARIABLES AND ENVIRONMENTS
   # place all parameters in an environment to save arguments
   paraenv <- new.env (parent=emptyenv ())
-  paraenv$start.tree <- tree
-  paraenv$grow.tree <- tree
+  if (class (tree) == 'multiPhylo') {
+    paraenv$trees <- tree
+    paraenv$start.tree <- tree[[sample (1:length (tree), 1)]]
+  } else {
+    paraenv$start.tree <- tree
+  }
+  paraenv$grow.tree <- paraenv$start.tree
   paraenv$datasource <- datasource
   paraenv$matching.names <- matching.names
   paraenv$names <- names
@@ -119,7 +128,6 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   # INIT
   # randomise order to prevent order bias
   randomised <- sample (1:nrow (qrylist$resolved))
-  print (randomised)
   qrylist$resolved <- qrylist$resolved[randomised, ]
   qrylist$lineages <- qrylist$lineages[randomised]
   paraenv$grow.tree <- paraenv$start.tree
@@ -169,6 +177,10 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   # save results to resenv
   tree <- .mnExtract (tree=paraenv$grow.tree, names=paraenv$names)
   resenv$trees <- c (resenv$trees, list (tree))
+  # choose new random tree
+  if (!is.null (paraenv$trees)) {
+    paraenv$start.tree <- paraenv$trees[[sample (1:length (paraenv$trees), 1)]]
+  }
 }
 .mnResolve <- function (names, paraenv) {
   # Resolve names using taxaResolve, return list of taxaResolve
@@ -286,7 +298,10 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   return (tree)
 }
 .mnExtract <- function (tree, names) {
-  # return tree representing names, also stats
+  # return tree representing names
+  if (class (tree) == 'multiPhylo') {
+    tree <- tree[[sample (1:length (tree), 1)]]
+  }
   if (sum (names %in% tree$tip.label) > 1) {
     res.tree <- drop.tip (tree, tip = tree$tip.label[!tree$tip.label %in% names])
     return (res.tree)
@@ -309,6 +324,47 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
     class (trees) <- 'multiPhylo'
     return (trees)
   }
+}
+.mnClean <- function (trees) {
+  # drop _ in names of trees in a multiphylo
+  # remove node labels
+  # set branch lengths to 1 if no branch lengths
+  if (class (trees) == 'multiPhylo') {
+    .drop <- function (i) {
+      tree <- trees[[i]]
+      tree$tip.label <- gsub ('_', ' ', tree$tip.label)
+      tree$node.label <- NULL
+      if (is.null (tree$edge.length)) {
+        tree$edge.length <- rep (1, nrow (tree$edge))
+      }
+      res <<- c (res, list (tree))
+    }
+    res <- list ()
+    m_ply (.data=data.frame (i=1:length (trees)), .fun=.drop)
+    class (res) <- 'multiPhylo'
+    return (res)
+  } else {
+    trees$tip.label <- gsub ('_', ' ', trees$tip.label)
+    trees$node.label <- NULL
+    if (is.null (trees$edge.length)) {
+      trees$edge.length <- rep (1, nrow (trees$edge))
+    }
+    return (trees)
+  }
+}
+.mnGetNames <- function(trees) {
+  # get tip names from a multiphylo
+  if (class (trees) == 'multiPhylo') {
+    .get <- function (i) {
+      res <<- c (res, trees[[i]]$tip.label)
+    }
+    res <- NULL
+    m_ply (.data=data.frame (i=1:length (trees)), .fun=.get)
+    res <- unique (res)
+  } else {
+    res <- trees$tip.label
+  }
+  return (res)
 }
 
 #' @name mapNamesPreDownload
