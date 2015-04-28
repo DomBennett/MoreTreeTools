@@ -116,6 +116,9 @@ calcComPhyMets <- function(cmatrix, tree, min.spp = 2,
   if (!any (colnames (cmatrix) %in% tree$tip.label)) {
     stop ('No tip labels in community matrix')
   }
+  if (any (is.na (cmatrix))) {
+    stop ('NAs in cmatrix')
+  }
   # convert to matrix, if not
   if (!is.matrix (cmatrix)) {
     cmatrix.dimnames <- dimnames (cmatrix)
