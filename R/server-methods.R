@@ -33,6 +33,8 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
     data <- .safeFromJSON (query)$data
     return (data)
   }
+  # avoid names -- names exist on database but mean nothing
+  avoid <- c ('unidentified')
   # make sure names don't have '_'
   names <- gsub ('_', ' ', names)
   data <- list()
@@ -51,6 +53,8 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
   for (i in 1:length (names)){
     #print(i)
     if (!'results' %in% names (data[[i]])){
+      search.name[i] <- data[[i]][[1]]
+    } else if (data[[i]][[1]] %in% avoid) {
       search.name[i] <- data[[i]][[1]]
     } else {
       search.name[i] <- data[[i]][[1]]
