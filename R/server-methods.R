@@ -21,6 +21,16 @@
 #' print (lineages[[6]])  # the bacteria has far fewer taxonomic levels
 
 taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
+  .replace <- function (i, slot.name) {
+    # controlled extraction
+    element <- data[[i]]$result[[1]][[slot.name]]
+    if (!is.null (element)) {
+      res <- element
+    } else {
+      res <- NA
+    }
+    res
+  }
   batchResolve <- function (batch.names) {
     #create query from names
     url <- "http://resolver.globalnames.org/name_resolvers.json?"
@@ -35,6 +45,8 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
   }
   # avoid names -- names exist on database but mean nothing
   avoid <- c ('unidentified')
+  # remove unwanted reserved characters from names
+  names <- gsub ('&|\\?|\\+|\\=', ' ', names)
   # make sure names don't have '_'
   names <- gsub ('_', ' ', names)
   data <- list()
@@ -51,29 +63,20 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
     lineage <- lineage.ids <- rank <- taxid <-
     match.type <- prescore <- score <- rep (NA, length (names))
   for (i in 1:length (names)){
-    #print(i)
     if (!'results' %in% names (data[[i]])){
       search.name[i] <- data[[i]][[1]]
     } else if (data[[i]][[1]] %in% avoid) {
       search.name[i] <- data[[i]][[1]]
     } else {
       search.name[i] <- data[[i]][[1]]
-      name.string[i] <-
-        data[[i]]$results[[1]]$name_string
-      canonical.form[i] <-
-        data[[i]]$results[[1]]$canonical_form
-      lineage[i] <-
-        data[[i]]$results[[1]]$classification_path
-      lineage.ids[i] <-
-        data[[i]]$results[[1]]$classification_path_ids
-      rank[i] <-
-        data[[i]]$results[[1]]$classification_path_ranks
-      taxid[i] <-
-        data[[i]]$results[[1]]$taxon_id
-      match.type[i] <-
-        data[[i]]$results[[1]]$match_type
-      prescore[i] <-
-        data[[i]]$results[[1]]$prescore
+      name.string[i] <- .replace(i, 'name_string')
+      canonical.form[i] <- .replace(i, 'canonical_form')
+      lineage[i] <- .replace(i, 'classification_path')
+      lineage.ids[i] <- .replace(i, 'classification_path_ids')
+      rank[i] <- .replace(i, 'classification_path_ranks')
+      taxid[i] <- .replace(i, 'taxon_id')
+      match.type[i] <- .replace(i, 'match_type')
+      prescore[i] <- .replace(i, 'prescore')
       score[i] <- data[[i]]$results[[1]]$score
     }
   }
