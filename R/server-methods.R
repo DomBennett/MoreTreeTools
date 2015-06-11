@@ -45,10 +45,12 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
   }
   # avoid names -- names exist on database but mean nothing
   avoid <- c ('unidentified')
-  # remove unwanted reserved characters from names
-  names <- gsub ('&|\\?|\\+|\\=', ' ', names)
   # make sure names don't have '_'
   names <- gsub ('_', ' ', names)
+  # remove all non alphanumerics
+  names <- gsub ('\\W+', ' ', names)
+  # remove trailing whitespace
+  names <- gsub ('^\\s+|\\s+$', '', names)
   data <- list()
   # Split names into batch sized chunks
   #  http://stackoverflow.com/questions/3318333/split-a-vector-into-chunks-in-r
