@@ -51,6 +51,8 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
   names <- gsub ('\\W+', ' ', names)
   # remove trailing whitespace
   names <- gsub ('^\\s+|\\s+$', '', names)
+  # any missing names, replace with stubs
+  names[names==''] <- 'invalid'
   data <- list()
   # Split names into batch sized chunks
   #  http://stackoverflow.com/questions/3318333/split-a-vector-into-chunks-in-r
