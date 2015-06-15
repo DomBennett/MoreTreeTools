@@ -84,6 +84,9 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
     # if resolve.list provided, no need to do any searches
     # unpack resolved names into qrylist and sbjctenv
     pull <- resolve.list$resolved$search.name %in% nonmatching.names
+    if (sum (pull) < 1) {
+      return (.mnEarlyReturn (tree, names, iterations))
+    }
     qrylist <- list ()
     qrylist$resolved <- resolve.list$resolved[pull, ]
     qrylist$lineages <- resolve.list$lineages[pull]
