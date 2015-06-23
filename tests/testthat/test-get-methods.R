@@ -28,6 +28,15 @@ hominins.clades <- list (clade.children = clade.children,
 
 # RUNNING
 context ('Testing \'get-methods\'')
+test_that ('getExtant([basic]) works',{
+  tree <- stree (20)
+  tree$edge.length <- rep (10, 20)
+  tree$edge.length[1] <- 1  # this will be t1
+  res <- getExtant (tree)
+  expect_false ('t1' %in% res)
+  expect_true ('t2' %in% res)
+})
+
 test_that ('getChildren([basic]) works',{
   expect_that (getChildren (hominoids, 20),
                is_equivalent_to (hominids))

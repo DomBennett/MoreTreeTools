@@ -1,3 +1,20 @@
+#' @name getExtant
+#' @title Return extant tips
+#' @description Return all tip labels whose tip age is 0.
+#' @details No details
+#' @template base_template
+#' @param tol tolerance, below this is considered 0
+#' @export
+#' @examples
+#' # example.var <- exampleFun (test.data)
+
+getExtant <- function (tree, tol=1e-08) {
+  # Return all extant tip labels
+  tip.ages <- getAge (tree, 1:getSize (tree))
+  pull <- tip.ages[, 2] < tol
+  tree$tip.label[pull]
+}
+
 #' @name getChildren
 #' @title Return descendant species from a node
 #' @description Return all tip labels that descend from a specifed node.
