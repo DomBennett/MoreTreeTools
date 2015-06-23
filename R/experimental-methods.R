@@ -29,6 +29,7 @@
 #' blockplot (tree, trait, title = 'Random trait', gradient = TRUE)
 #' # ... isn't as symetrical
 
+# TODO -- fix example
 blockplot <- function (tree, trait, gradient = TRUE, title = NULL) {
   .byTraitType <- function (i) {
     # calculate proportion of trait per edge for categorical
