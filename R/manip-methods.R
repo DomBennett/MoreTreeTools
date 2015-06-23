@@ -1,28 +1,30 @@
-#' @name reLoad
-#' @title Change loading of tree
-#' @description Return a tree with loading changed by factor.
+#' @name reGravitise
+#' @title Change gravity of tree
+#' @description Return a tree with gravity changed by factor.
 #' @details The functions works by adding and removing branch length
-#' between parent and children branches. The amount by which the branch
-#' lengths are changed is determiend by factor.
+#' between parent and child branches. The amount by which the branch
+#' lengths are changed is determined by factor.
 #' @template base_template
-#' @param factor proportion (-1 to +1) by which loading is changed,
-#' positive values increase loading, negative values decrease it.
+#' @param factor proportion (-1 to +1) by which gravity is changed,
+#' positive values increase gravity, negative values decrease it.
 #' @export
 #' @examples
-#' # Create balanced tree, plot positively and negatively reloaded
+#' # Create balanced tree, plot positively and negatively reGravitised
 #' n <- 16
-#' par (mfrow = c (2, 2), mar = c (1, 1, 1, 1))
+#' par (mfrow = c (3, 1), mar = c (1, 1, 1, 1))
 #' tree <- compute.brlen (stree (n, 'balanced'))
 #' tree$root.edge <- 0.1  # add a root edge
-#' plot (reLoad (tree, factor = -0.9), show.tip.label=FALSE,
-#'       edge.width=2, root.edge=TRUE)
-#' plot (reLoad (tree, factor = 0.9), show.tip.label=FALSE,
-#'       edge.width=2, root.edge=TRUE)
+#' plot (tree, show.tip.label=FALSE, edge.width=2, root.edge=TRUE,
+#'       main='Original')
+#' plot (reGravitise (tree, factor = -0.9), show.tip.label=FALSE,
+#'       edge.width=2, root.edge=TRUE, main='Reduced gravity')
+#' plot (reGravitise (tree, factor = 0.9), show.tip.label=FALSE,
+#'       edge.width=2, root.edge=TRUE, main='Increased gravity')
 
-reLoad <- function (tree, factor) {
-  # Return a tree with the loading changed by factor
-  downLoad <- function (node) {
-    # decrease tree loading
+reGravitise <- function (tree, factor) {
+  # Return a tree with the gravity changed by factor
+  downGravitise <- function (node) {
+    # decrease tree gravity
     # for root node, use root edge
     if (node == getSize (tree) + 1) {
       # get the following edges
@@ -49,8 +51,8 @@ reLoad <- function (tree, factor) {
     }
     tree <<- tree
   }
-  upLoad <- function (node) {
-    # increase tree loading
+  upGravitise <- function (node) {
+    # increase tree gravity
     # for root node, use root edge
     if (node == getSize (tree) + 1) {
       # get the following edges
@@ -88,15 +90,15 @@ reLoad <- function (tree, factor) {
   # list internal nodes
   internal.nodes <- length (tree$tip.label)+1:
     (length (tree$tip.label) +tree$Nnode)
-  # if factor is negative, downLoad
+  # if factor is negative, downGravitise
   if (factor < 0) {
     factor <- abs (factor)
     m_ply (.data = data.frame (node = internal.nodes),
-           .fun = downLoad)
+           .fun = downGravitise)
   } else {
-    # else upLoad
+    # else upGravitise
     m_ply (.data = data.frame (node = internal.nodes),
-           .fun = upLoad)
+           .fun = upGravitise)
   }
   tree
 }
