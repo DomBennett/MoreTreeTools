@@ -4,7 +4,7 @@
 \alias{calcDist}
 \title{Calculate the distance between trees using different methods}
 \usage{
-calcDist(tree1, tree2, method = c("all", "PH85", "score", "dmat"),
+calcDist(tree1, tree2, method = c("all", "PH85", "score", "dmat", "trip"),
   normalised = TRUE)
 }
 \arguments{
@@ -12,7 +12,7 @@ calcDist(tree1, tree2, method = c("all", "PH85", "score", "dmat"),
 
 \item{tree2}{second tree of comparison}
 
-\item{method}{'all', 'PH85', 'score' or 'dmat'. Default 'all'}
+\item{method}{'all', 'PH85', 'score', 'trip' or 'dmat'. Default 'all'}
 
 \item{normalised}{boolean, return distances of 0-1}
 }
@@ -21,11 +21,33 @@ Calculate the normalised tree distance (topological and branch length)
 between trees
 }
 \details{
-This functions uses three different methods for calculating the distance
-between trees: the 'PH85' and 'score' methods of ape's topo.dist and/or 1 - Pearson's r
-calculated from the cophenetic matrix of the tip distances ('dmat'). The function returns
-the normalised distances by default. Trees of different numbers of tips are shrunk
-to the same size. Function will also rescale branch distances to sum to 1 before
-calculating distances.
+This functions uses four different methods for calculating the distance
+between trees: the 'PH85' and 'score' methods of ape's topo.dist, 1 - Pearson's r
+calculated from the cophenetic matrix of the tip distances ('dmat') or the triplet
+distance of Critchlow et al. (1996). The function returns the normalised distances
+by default. Trees of different numbers of tips are pruned to the same size.
+Function will also rescale branch distances to sum to 1 before
+calculating distances. Note, triplet metric will only work for bifurcating and
+rooted trees otherwise it will return NA.
+}
+\references{
+Critchlow DE, Pearl DK, Qian C. (1996) The Triples Distance for rooted bifurcating
+phylogenetic trees. Systematic Biologly, 45, 323–34.
+
+Billera, L. J., Holmes, S. P. and Vogtmann, K. (2001) Geometry of the space
+of phylogenetic trees. Advances in Applied Mathematics, 27, 733–767.
+
+Kuhner, M. K. and Felsenstein, J. (1994) Simulation comparison of phylogeny
+algorithms under equal and unequal evolutionary rates. Molecular Biology and
+Evolution, 11, 459–468.
+
+Nei, M. and Kumar, S. (2000) Molecular Evolution and Phylogenetics. Oxford:
+Oxford University Press.
+
+Penny, D. and Hendy, M. D. (1985) The use of tree comparison metrics.
+Systemetic Zoology, 34, 75–82.
+
+Rzhetsky, A. and Nei, M. (1992) A simple method for estimating and testing
+minimum-evolution trees. Molecular Biology and Evolution, 9, 945–967.
 }
 
