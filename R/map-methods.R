@@ -1,3 +1,89 @@
+#' @name pinNames
+#' @title Pin new tips to time-callibrated tree
+#' @description Take a list of names with taxonomic lineages and age ranges, and pin them on
+#' to existing time-callibrated tree.
+#' @details This function ...
+#' @template base_template
+#' @export
+#' @examples
+#' # bring in the catarrhines data
+
+pinNames <- function (tree, names, lineages, min.ages, max.ages,
+                      fuzzy=TRUE, datasource=4,
+                      iterations=1, resolve.list=NULL) {
+  # SAFETY CHECK
+  if (iterations < 1) {
+    stop ('Iterations must be >=1')
+  }
+  if (!is.vector (names) && length (names) <= 1) {
+    stop ('Names must be a vector of more than 1 character string')
+  }
+  if (!class (tree) %in%  c ('phylo', 'multiPhylo')) {
+    stop ('Tree must be phylo or multiPhylo')
+  }
+  #TODO update addTip to handle node.label, for now drop node.label
+  # INIT
+  # drop underscores, check for branch lengths and drop node labels
+  tree <- .mnClean (tree)
+  names <- gsub ('_', ' ', names)
+  # find matching and non-matching names
+  tip.labels <- .mnGetNames (tree)
+  matching.names <- names[names %in% tip.labels]
+  nonmatching.names <- names[!names %in% tip.labels]
+  # stop now if all names match names in tree or fuzzy is false
+  if (!fuzzy || length (matching.names) == length (names)) {
+    return (.mnEarlyReturn (tree, names, iterations))
+  }
+  # VARIABLES AND ENVIRONMENTS
+  # place all parameters in an environment to save arguments
+  paraenv <- new.env (parent=emptyenv ())
+  if (class (tree) == 'multiPhylo') {
+    paraenv$trees <- tree
+    paraenv$start.tree <- tree[[sample (1:length (tree), 1)]]
+  } else {
+    paraenv$start.tree <- tree
+  }
+  paraenv$grow.tree <- paraenv$start.tree
+  paraenv$datasource <- datasource
+  paraenv$matching.names <- matching.names
+  paraenv$names <- names
+  paraenv$by.age <- TRUE
+  # get query and subject resolved names
+  qrylist <- list ()
+  qrylist$lineages <- lineages
+  qrylist$resolved <- data.frame (search.name=names,
+                                  min.age=min.ages,
+                                  max.age=max.ages)
+  if (!is.null (resolve.list)) {
+    # if resolve.list provided, no need to do any searches
+    # unpack resolved names into sbjctenv
+    sbjctenv <- new.env (parent=emptyenv ())
+    sbjctenv$resolved <- resolve.list$resolved
+    sbjctenv$lineages <- resolve.list$lineages
+    paraenv$deja.vues <- tree$tip.label
+  } else {
+    # hold subject name resolution results in a single env
+    sbjctenv <- new.env (parent=emptyenv ())
+    .mnResolveUpdate (paraenv=paraenv, sbjctenv=sbjctenv)
+  }
+  # hold all resulting trees and stats in a single env
+  resenv <- new.env (parent=emptyenv ())
+  resenv$trees <- list ()
+  # ITERATE
+  # loop through for each iteration, write results to resenv
+  m_ply (.data=data.frame(iteration=1:iterations), .fun=.mnMap,
+         resenv=resenv, qrylist=qrylist, sbjctenv=sbjctenv,
+         paraenv=paraenv)
+  # RETURN
+  if (length (resenv$trees) > 1) {
+    trees <- resenv$trees
+    class (trees) <- 'multiPhylo'
+  } else {
+    trees <- resenv$trees[[1]]
+  }
+  return (trees)
+}
+
 #' @name mapNames
 #' @title Map names to a tree
 #' @description Map names to a tree with the option of searching online
@@ -79,6 +165,7 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   paraenv$datasource <- datasource
   paraenv$matching.names <- matching.names
   paraenv$names <- names
+  paraenv$by.age <- FALSE
   # get query and subject resolved names
   if (!is.null (resolve.list)) {
     # if resolve.list provided, no need to do any searches
@@ -151,18 +238,21 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
         # form an in-group to the exclusion of the qry lineage
         possibles <- as.vector (which (lsrs == max (lsrs)))
         best.sbjcts <- sbjctlist$lineages[possibles]
-        if (length (best.sbjcts) > 1) {
-          min.lsr <- min (.mnGetLSR (qry=best.sbjcts[[1]],
-                                     sbjcts=best.sbjcts[-1]))
-        } else {
-          # if there is only 1, it must be the best match in tree
-          min.lsr <- max (lsrs)
-        }
-        if (max (lsrs) >= min.lsr) {
-          paraenv$grow.tree <- .mnAddTip (tree=paraenv$grow.tree,
-                                          tip.is=sbjctlist$resolved$tip.i[possibles],
-                                          new.name=as.character (
-                                            qrylist$resolved$search.name[i]))
+        if (length (best.sbjcts) < length (sbjctlist$lineages)) {
+          # if the length of best is the length of all, then no resolution withing sbjcts
+          if (paraenv$by.age) {
+            paraenv$grow.tree <- .mnAddTipWAge (tree=paraenv$grow.tree,
+                                                tip.is=sbjctlist$resolved$tip.i[possibles],
+                                                new.name=as.character (
+                                                  qrylist$resolved$search.name[i]),
+                                                max.age=qrylist$resolved$max.age[i],
+                                                min.age=qrylist$resolved$min.age[i])
+          } else {
+              paraenv$grow.tree <- .mnAddTip (tree=paraenv$grow.tree,
+                                              tip.is=sbjctlist$resolved$tip.i[possibles],
+                                              new.name=as.character (
+                                                qrylist$resolved$search.name[i]))
+          }
           # update tip.i in sbjctlist
           sbjctlist <- .mnTemporise(record=sbjctlist, tree=paraenv$grow.tree)
         }
@@ -178,8 +268,12 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
     sbjctlist <- .mnTemporise(record=sbjctenv, tree=paraenv$grow.tree)
   }
   # save results to resenv
-  tree <- .mnExtract (tree=paraenv$grow.tree, names=paraenv$names)
-  resenv$trees <- c (resenv$trees, list (tree))
+  if (paraenv$by.age) {
+    resenv$trees <- c (resenv$trees, list (paraenv$grow.tree))
+  } else {
+    tree <- .mnExtract (tree=paraenv$grow.tree, names=paraenv$names)
+    resenv$trees <- c (resenv$trees, list (tree))
+  }
   # choose new random tree
   if (!is.null (paraenv$trees)) {
     paraenv$start.tree <- paraenv$trees[[sample (1:length (paraenv$trees), 1)]]
@@ -265,6 +359,51 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   res$resolved <- res$resolved[!not.in.tree, ]
   res$lineages <- res$lineages[!not.in.tree]
   return (res)
+}
+.mnAddTipWAge <- function (tree, tip.is, new.name,
+                           min.age, max.age) {
+  print(new.name)
+  # add new tip
+  if (length (tip.is) == 1) {
+    edge <- which (tip.is == tree$edge[ ,2])
+    edge.age <- getAge (tree, edge=edge)
+    pull <- edge.age$max.age >= max.age
+    if (!pull) {
+      edge <- NA
+    }
+  } else {
+    # randomly map new tip to any edge in the clade
+    # represented by the matching tip.is
+    # find the parent node of all the matching tips
+    children <- tree$tip.label[tip.is]
+    parent.node <- getParent (tree, tips=children)
+    # get all descending
+    edges <- getEdges(tree, node=parent.node)
+    # INCLUDING supporting edge!!!
+    edges <- c (edges, which (tree$edge[ ,2] ==parent.node))
+    # check ages
+    edge.ages <- getAge (tree, edge=edges)
+    pull <- edge.ages$max.age >= max.age
+    edges <- edges[pull]
+    # choose edge at random
+    if (length (edges) > 1) {
+      edge <- sample (edges, size=1)
+    } else {
+      edge <- edges[1]
+    }
+  }
+  # exit if no suitable edge found
+  if (!is.numeric (edge)) {
+    return (tree)
+  }
+  # random tip and node age
+  age.range <- getAge (tree, edge=edge)
+  node.age <- runif (n=1, min=age.range[1, 'max.age'],
+                     max=age.range[1, 'max.age'])
+  tip.age <- runif (n=1, min=min.age, max=node.age)
+  tree <- addTip (tree, edge=edge, tip.name=new.name, node.age=node.age,
+                  tip.age=tip.age)
+  return (tree)
 }
 .mnAddTip <- function (tree, tip.is, new.name) {
   # add new tip
