@@ -1,3 +1,22 @@
+#' @name getOutgroup
+#' @title Find outgroup in a tree from tips
+#' @description Return the outgroup tip of a tree from a vector of tips given.
+#' @details Note, if polytomies occur in the tree, outgroup maybe a vector.
+#' @template base_template
+#' @param tips vector of tip labels
+#' @export
+#' @examples
+#' # example.var <- exampleFun (test.data)
+
+getOutgroup <- function (tree, tips) {
+  # find the outgroup of a set of tips
+  shrunk <- drop.tip (tree,
+                      tip=tree$tip.label[!tree$tip.label %in% tips])
+  shrunk$edge.length <- rep (1, nrow (shrunk$edge))
+  dists <- colSums (cophenetic.phylo (shrunk))
+  names (dists)[dists == max (dists)]
+}
+
 #' @name getExtant
 #' @title Return extant tips
 #' @description Return all tip labels whose tip age is 0.

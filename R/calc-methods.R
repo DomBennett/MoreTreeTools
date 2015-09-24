@@ -398,73 +398,40 @@ evenCommData <- function(tree, nsites, nspp) {
 #' @title Calculate the distance between trees using different methods
 #' @description Calculate the normalised tree distance (topological and branch length)
 #' between trees
-#' @details This functions uses three different methods for calculating the distance
-#' between trees: the 'PH85' and 'score' methods of ape's topo.dist and/or 1 - Pearson's r
-#' calculated from the cophenetic matrix of the tip distances ('dmat'). The function returns
-#' the normalised distances by default. Trees of different numbers of tips are shrunk
-#' to the same size. Function will also rescale branch distances to sum to 1 before
-#' calculating distances.
+#' @details This functions uses four different methods for calculating the distance
+#' between trees: the 'PH85' and 'score' methods of ape's topo.dist, 1 - Pearson's r
+#' calculated from the cophenetic matrix of the tip distances ('dmat') or the triplet
+#' distance of Critchlow et al. (1996). The function returns the normalised distances
+#' by default. Trees of different numbers of tips are pruned to the same size.
+#' Function will also rescale branch distances to sum to 1 before
+#' calculating distances. Note, triplet metric will only work for bifurcating and
+#' rooted trees otherwise it will return NA.
 #' @param tree1 first tree of comparison
 #' @param tree2 second tree of comparison
-#' @param method 'all', 'PH85', 'score' or 'dmat'. Default 'all'
+#' @param method 'all', 'PH85', 'score', 'trip' or 'dmat'. Default 'all'
 #' @param normalised boolean, return distances of 0-1
+#' @references
+#' Critchlow DE, Pearl DK, Qian C. (1996) The Triples Distance for rooted bifurcating
+#' phylogenetic trees. Systematic Biologly, 45, 323–34.
+#' 
+#' Billera, L. J., Holmes, S. P. and Vogtmann, K. (2001) Geometry of the space
+#' of phylogenetic trees. Advances in Applied Mathematics, 27, 733–767.
+#' 
+#' Kuhner, M. K. and Felsenstein, J. (1994) Simulation comparison of phylogeny
+#' algorithms under equal and unequal evolutionary rates. Molecular Biology and
+#' Evolution, 11, 459–468.
+#' 
+#' Nei, M. and Kumar, S. (2000) Molecular Evolution and Phylogenetics. Oxford:
+#' Oxford University Press.
+#' 
+#' Penny, D. and Hendy, M. D. (1985) The use of tree comparison metrics.
+#' Systemetic Zoology, 34, 75–82.
+#' 
+#' Rzhetsky, A. and Nei, M. (1992) A simple method for estimating and testing
+#' minimum-evolution trees. Molecular Biology and Evolution, 9, 945–967.
 
-calcDist <- function (tree1, tree2, method = c ('all', 'PH85', 'score', 'dmat'),
-                      normalised = TRUE) {
-  # internals
-  calcPH85 <- function (tree1, tree2) {
-    # dist.topo assumes trees are unrooted
-    tree1 <- unroot (tree1)
-    tree2 <- unroot (tree2)
-    # get distance
-    d <- dist.topo (tree1, tree2, method = 'PH85')
-    if (normalised) {
-      # expected max, the sum of total internal branches
-      max.d <- (tree1$Nnode + tree2$Nnode) - 2
-      d <- d / max.d
-    }
-    d
-  }
-  calcScore <- function (tree1, tree2) {
-    # If either have no lengths, return NA
-    if (is.null (tree1$edge.length) | is.null (tree2$edge.length)) {
-      return (NA)
-    }
-    # dist.topo assumes trees are unrooted
-    tree1 <- unroot (tree1)
-    tree2 <- unroot (tree2)
-    # rescale branch lengths
-    tree1$edge.length <- tree1$edge.length/sum (tree1$edge.length)
-    tree2$edge.length <- tree2$edge.length/sum (tree2$edge.length)
-    # get distance
-    d <- dist.topo (tree1, tree2, method = 'score')
-    if (normalised) {
-      # get internal branches for tree 1 and 2
-      ibs.t1 <- which (!tree1$edge[ ,2] %in% 1:length (tree1$tip.label))
-      ibs.t2 <- which (!tree2$edge[ ,2] %in% 1:length (tree2$tip.label))
-      # get internal branch lengths
-      els.1 <- tree1$edge.length[ibs.t1]
-      els.2 <- tree2$edge.length[ibs.t2]
-      # calc max possible distance
-      max.d <- sqrt (sum (els.1^2, els.2^2))
-      d <- d / max.d
-    }
-    d
-  }
-  calcDmat <- function (tree1, tree2) {
-    # If either have no lengths, return NA
-    if (is.null (tree1$edge.length) | is.null (tree2$edge.length)) {
-      return (NA)
-    }
-    # get tip distances
-    dist1 <- cophenetic.phylo (tree1)
-    dist2 <- cophenetic.phylo (tree2)
-    # ensure tips are in the same order
-    dist1 <- dist1[order (colnames(dist1)), order (colnames(dist1))]
-    dist2 <- dist2[order (colnames(dist2)), order (colnames(dist2))]
-    model <- cor.test (x = dist1, y = dist2)
-    as.numeric (1 - model$estimate)  # 1 - Pearson's r
-  }
+calcDist <- function (tree1, tree2, method=c ('all', 'PH85', 'score', 'dmat', 'trip'),
+                      normalised=TRUE) {
   method <- match.arg (method)
   # safety first
   if (sum (tree1$tip.label %in% tree2$tip.label) < 3) {
@@ -480,17 +447,112 @@ calcDist <- function (tree1, tree2, method = c ('all', 'PH85', 'score', 'dmat'),
     tree2 <- drop.tip (tree2, tip = tree2.drop)
   }
   if (method == 'PH85') {
-    return (calcPH85 (tree1, tree2))
+    return (calcPH85 (tree1, tree2, normalised))
   }
   if (method == 'score') {
-    return (calcScore (tree1, tree2))
+    return (calcScore (tree1, tree2, normalised))
   }
   if (method == 'dmat') {
-    return (calcDmat (tree1, tree2))
+    return (calcDmat (tree1, tree2, normalised))
   }
-  data.frame ('PH85' = calcPH85 (tree1, tree2),
-              'score' = calcScore (tree1, tree2),
-              'dmat' = calcDmat (tree1, tree2))
+  if (method == 'trip') {
+    return (calcTrip (tree1, tree2, normalised))
+  }
+  data.frame ('PH85'=calcPH85 (tree1, tree2, normalised),
+              'score'=calcScore (tree1, tree2, normalised),
+              'triplet'=calcTrip (tree1, tree2, normalised),
+              'dmat'=calcDmat (tree1, tree2, normalised))
+}
+
+calcPH85 <- function (tree1, tree2, normalised) {
+  # dist.topo assumes trees are unrooted
+  tree1 <- unroot (tree1)
+  tree2 <- unroot (tree2)
+  # get distance
+  d <- dist.topo (tree1, tree2, method = 'PH85')
+  if (normalised) {
+    # expected max, the sum of total internal branches
+    max.d <- (tree1$Nnode + tree2$Nnode) - 2
+    d <- d / max.d
+  }
+  d
+}
+
+calcScore <- function (tree1, tree2, normalised) {
+  # If either have no lengths, return NA
+  if (is.null (tree1$edge.length) | is.null (tree2$edge.length)) {
+    return (NA)
+  }
+  # dist.topo assumes trees are unrooted
+  tree1 <- unroot (tree1)
+  tree2 <- unroot (tree2)
+  # rescale branch lengths
+  tree1$edge.length <- tree1$edge.length/sum (tree1$edge.length)
+  tree2$edge.length <- tree2$edge.length/sum (tree2$edge.length)
+  # get distance
+  d <- dist.topo (tree1, tree2, method = 'score')
+  if (normalised) {
+    # get internal branches for tree 1 and 2
+    ibs.t1 <- which (!tree1$edge[ ,2] %in% 1:length (tree1$tip.label))
+    ibs.t2 <- which (!tree2$edge[ ,2] %in% 1:length (tree2$tip.label))
+    # get internal branch lengths
+    els.1 <- tree1$edge.length[ibs.t1]
+    els.2 <- tree2$edge.length[ibs.t2]
+    # calc max possible distance
+    max.d <- sqrt (sum (els.1^2, els.2^2))
+    d <- d / max.d
+  }
+  d
+}
+calcDmat <- function (tree1, tree2, normalised) {
+  # If either have no lengths, return NA
+  if (is.null (tree1$edge.length) | is.null (tree2$edge.length)) {
+    return (NA)
+  }
+  # get tip distances
+  dist1 <- cophenetic.phylo (tree1)
+  dist2 <- cophenetic.phylo (tree2)
+  # ensure tips are in the same order
+  dist1 <- dist1[order (colnames(dist1)), order (colnames(dist1))]
+  dist2 <- dist2[order (colnames(dist2)), order (colnames(dist2))]
+  model <- cor.test (x = dist1, y = dist2)
+  as.numeric (1 - model$estimate)  # 1 - Pearson's r
+}
+
+calcTrip <- function (tree1, tree2, normalised) {
+  # internal
+  .count <- function (i) {
+    tips <- all.tips[ ,i]
+    tree1.outgroup <- getOutgroup (tree1, tips)
+    tree2.outgroup <- getOutgroup (tree2, tips)
+    # test if the two are the same
+    if (length (tree1.outgroup) != length (tree2.outgroup) ||
+          tree1.outgroup != tree2.outgroup) {
+      counter <<- counter + 1
+    }
+  }
+  # requires bifurcating and rooted trees
+  if (!is.rooted (tree1) && !is.rooted (tree2)) {
+    return (NA)
+  }
+  if (!is.binary.tree (tree1) && !is.binary.tree (tree2)) {
+    return (NA)
+  }
+  # shared tips
+  pull.1 <- tree1$tip.label %in% tree2$tip.label
+  pull.2 <- tree2$tip.label %in% tree1$tip.label
+  # get all combinations of 3 tips
+  all.tips <- combn (tree1$tip.label[pull.1], 3)
+  # loop through all combinations,
+  # count all triplets where the outgroups differ
+  counter <- 0
+  m_ply (.data=data.frame(i=1:ncol (all.tips)),
+         .fun=.count)
+  if (normalised) {
+    return (counter / ncol (all.tips))
+  } else {
+    return (counter)
+  }
 }
 
 #' @name calcBalance

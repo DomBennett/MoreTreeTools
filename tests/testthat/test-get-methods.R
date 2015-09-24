@@ -28,6 +28,17 @@ hominins.clades <- list (clade.children = clade.children,
 
 # RUNNING
 context ('Testing \'get-methods\'')
+test_that ('getOutgroup() works',{
+  tips <- hominoids$tip.label[-1]
+  tips <- c (sample (tips, 3), "Macaca mulatta")
+  outgroup <- getOutgroup (hominoids, tips)
+  expect_true (outgroup == "Macaca mulatta")
+  tips <- c ("Hylobates muelleri", "Hylobates pileatus",
+             "Hylobates lar")
+  outgroup <- getOutgroup (hominoids, tips)
+  expect_true (length (outgroup) == length (tips))
+})
+
 test_that ('getExtant([basic]) works',{
   tree <- stree (20)
   tree$edge.length <- rep (10, 20)

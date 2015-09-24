@@ -48,12 +48,14 @@ test_that ('calcDist([basic]) works', {
   expect_that (0, equals (distances[['PH85']]))
   expect_that (0, equals (distances[['score']]))
   expect_that (0, equals (distances[['dmat']]))
+  expect_that (0, equals (distances[['triplet']]))
   # rearrange to be maximally distant
   tree1$tip.label <- tree1$tip.label[c (10,2,8,4,6,5,7,3,9,1)]
-  distances <- calcDist (tree1, tree2)
+  distances <- round (calcDist (tree1, tree2), 3)
   expect_that (1, equals (distances[['PH85']]))
   expect_that (1, equals (distances[['score']]))
-  expect_that (0.6516854, equals (distances[['dmat']]))  # max for 10 tips
+  expect_that (0.652, equals (distances[['dmat']]))  # maxs for 10 tips
+  expect_that (0.758, equals (distances[['triplet']]))
 })
 # test_that ('calcBalance([basic]) works', {
 #   TODO
