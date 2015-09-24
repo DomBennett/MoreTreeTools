@@ -107,6 +107,9 @@ pinNames <- function (tree, names, lineages, min.ages, max.ages,
 #' For non-time-callibrated or trees without branch lengths, the function using taxonomic
 #' distance for random placement and returns a tree without branch lengths.
 #' 
+#' Does not require trees to be bifurcating, but will randomly resolve polytomies for
+#' every iteration if not.
+#' 
 #' @template base_template
 #' @param names vector of names of tips to be extracted
 #' @param fuzzy boolean, if true will search Global Names Resolver online
@@ -220,7 +223,11 @@ mapNames <- function (tree, names, fuzzy=TRUE, datasource=4,
   randomised <- sample (1:nrow (qrylist$resolved))
   qrylist$resolved <- qrylist$resolved[randomised, ]
   qrylist$lineages <- qrylist$lineages[randomised]
-  paraenv$grow.tree <- paraenv$start.tree
+  if (!is.binary.tree (paraenv$start.tree)) {
+    paraenv$grow.tree <- multi2di (paraenv$start.tree)
+  } else {
+    paraenv$grow.tree <- paraenv$start.tree
+  }
   sbjctlist <- .mnTemporise(record=sbjctenv, tree=paraenv$grow.tree)  # convert to list
   # LOOP until qrylist in grow.tree or sbjct names exhausted
   while (TRUE) {
