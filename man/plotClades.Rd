@@ -4,7 +4,8 @@
 \alias{plotClades}
 \title{Plot clade success through time}
 \usage{
-plotClades(clades, k = 3, clade.stats = NULL, i = NULL)
+plotClades(clades, k = 3, clade.stats = NULL, i = NULL, legend = FALSE,
+  merge = FALSE)
 }
 \arguments{
 \item{clades}{}
@@ -32,7 +33,38 @@ specifying their column indexes in the clades dataframe.
 The user can calculate clade stats inside or outside the function.
 }
 \examples{
-# example.var <- exampleFun (test.data)
+library (MoreTreeTools)
+# simulate an EDBMM tree (this will take time!)
+trees <- runEDBMM (birth=2, death=1, stop.at=200, record=TRUE,
+                   progress.bar='time')
+# get raw number of descendents by node for trees
+clades <- getCladeSuccess (trees)
+# get independent number of descendents by node
+clades.ind <- getCladeSuccess (trees, ind=TRUE)
+# calculate stats by clade
+clade.stats <- calcCladeStats (clades)
+clade.ind.stats <- calcCladeStats (clades.ind)
+# plot the trajectories of the 5 biggest clades
+plotClades (clades=clades, clade.stats=clade.stats, k=5)
+# plot clades through time for all clades that went extinct
+# by the end of the simulation (there are 11 time steps in the simulation)
+selection <- which (clade.stats$end < 11 &
+                      clade.stats$max.size > 2)
+plotClades (clades=clades, i=selection)
+plotClades (clades=clades, i=selection, merge=TRUE)
+# compare with ind clades
+selection <- which (clade.ind.stats$end < 11 &
+                      clade.ind.stats$max.size > 2)
+plotClades (clades=clades.ind, i=selection)
+plotClades (clades=clades.ind, i=selection, merge=TRUE)
+# it is difficult to detect a difference in clade shape
+# with so few time steps. Instead let's load some generated
+# test clades
+load ('testclades')
+# this loads 'unif.clades' and 'arch.clades'
+plotClades (clades=unif.clades, i=1:ncol (unif.clades), merge=TRUE)
+plotClades (clades=arch.clades, i=1:ncol (arch.clades), merge=TRUE)
+# now we can see a difference
 }
 \references{
 No references yet!
