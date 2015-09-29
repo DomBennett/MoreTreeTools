@@ -18,35 +18,52 @@
 #' @examples
 #' # example.var <- exampleFun (test.data)
 
-getCladeSuccess <- function (trees, time.intervals=1:length(trees)) {
+getCladeSuccess <- function (trees, ind=FALSE, count.extants=FALSE,
+                             time.intervals=1:length(trees)) {
   # Return dataframe of clades through time from list of trees
   # with named nodes
   .get <- function (i) {
-    .countChildren (trees[[i]])
+    .countChildren (trees[[i]], ind, count.extants)
   }
   clade.successes <- mlply (.data = data.frame (i = 1:length (trees)),
                             .fun = .get)
   .reformat (clade.successes, time.intervals)
 }
-.countChildren <- function (tree) {
+.countChildren <- function (tree, ind, count.extants) {
   # Count the number of extant children for every node
-  .count <- function (node.label) {
+  .count <- function (node.label=NULL, node=NULL) {
+    if (!is.null (node.label)) {
+      node <- which (tree$node.label == node.label)
+      node <- length (tree$tip.label) + node
+    }
+    node.children <- getChildren (tree, node)
+    extant <- node.children[node.children %in% extants]
+    return (length (extant))
+  }
+  .countind <- function (node.label) {
     node <- which (tree$node.label == node.label)
     node <- length (tree$tip.label) + node
-    if (sum (tree$edge[ ,1] == node) > 1) {
-      # if the node has two descending edges
-      node.children <- getChildren (tree, node)
-      extant <- node.children[node.children %in% extants]
-      return (length (extant))
-    }
-    return (0)
+    d.nodes <- tree$edge[which (tree$edge[ ,1] == node),2]
+    d1 <- .count (node=d.nodes[1])
+    d2 <- .count (node=d.nodes[2])
+    # return weighted clade number
+    d1 + d2 - abs (d1 - d2)
   }
   # all internal nodes
   node.labels <- tree$node.label
-  # make sure only extant clades are counted
-  extants <- getExtant (tree)
-  res <- mdply (.data = data.frame (node.label = node.labels),
-                .fun = .count)
+  if (count.extants) {
+    extants <- tree$tip.label
+  } else {
+    # make sure only extant clades are counted
+    extants <- getExtant (tree)
+  }
+  if (ind) {
+    res <- mdply (.data = data.frame (node.label = node.labels),
+                  .fun = .countind)
+  } else {
+    res <- mdply (.data = data.frame (node.label = node.labels),
+                  .fun = .count)
+  }
   colnames (res) <- c ('node', 'n.children')
   res
 }
@@ -164,8 +181,18 @@ calcCladeStats <- function (clades) {
 #' @examples
 #' # example.var <- exampleFun (test.data)
 
-plotClades <- function (clades, k=3, clade.stats=NULL, i=NULL) {
-  # Return geom_object of k clade success through time
+plotClades <- function (clades, k=3, clade.stats=NULL, i=NULL,
+                        legend=FALSE, merge=FALSE) {
+  # Internals
+  conf <- function (x, upper=FALSE) {
+    # standard error confidence
+    if (upper) {
+      res <- mean(x) + sd(x)/sqrt(length(x))
+    } else {
+      res <- mean(x) - sd(x)/sqrt(length(x))
+    }
+    res
+  }
   .combine <- function (i) {
     # combine into single dataframe for ggplot
     n <- as.vector (clades[ ,i])
@@ -173,8 +200,30 @@ plotClades <- function (clades, k=3, clade.stats=NULL, i=NULL) {
     c <- colnames (clades)[i]
     data.frame (n, t, c)
   }
+  .normalise <- function (i) {
+    n <- as.vector (clades[ ,i])
+    n <- n[n != 0]
+    n <- n / min (n)
+    n <- n / max(n)
+    t <- seq (0, 1, length.out=length (n))
+    data.frame (n, t)
+  }
+  if (merge) {
+    # if merged into single plot
+    p.data <- mdply (.data=data.frame(i=i), .fun=.normalise)[ ,-1]
+    p <- ggplot (p.data, aes (x=t, y=n)) +
+        stat_summary(fun.y = mean, geom="line") +
+        stat_summary(fun.y = conf, geom="line", col='red',
+                     lty=3) +
+        stat_summary(fun.y = conf, geom="line", col='red',
+                     upper=TRUE, lty=3) +
+        theme_bw() +
+        xlab ('Normalised time') +
+          ylab ('Normalised N')
+    return (p)
+  }
   if (is.null (i)) {
-    # If not i given, use k
+    # If i not given, use k
     if (is.null (clade.stats)) {
       clade.stats <- calcCladeStats (clades)
     }
@@ -182,11 +231,18 @@ plotClades <- function (clades, k=3, clade.stats=NULL, i=NULL) {
     i <- order (clade.stats$tot.size, decreasing=TRUE)[1:k]
     # get their position in clades
     i <- which (clade.stats$name[i] %in% colnames (clades))
+    # title
+    gt <- paste0 ('K = ', k)
+  } else {
+    gt <- paste0 ('i = ', length (i))
   }
   # combine clades into ggplot plot dataframe
   p.data <- mdply (.data=data.frame(i=i), .fun=.combine)[ ,-1]
   p <- ggplot (p.data, aes (x=t, y=n, colour=c)) +
-    geom_line() + theme_bw() + theme (legend.position="none") +
-    xlab ('Time') + ylab ('N') + ggtitle (paste0 ('K = ', k))
+    geom_line() + theme_bw() +
+    xlab ('Time') + ylab ('N')  + ggtitle(gt)
+  if (!legend) {
+    p <- p + theme (legend.position="none")
+  }
   return (p)
-} 
+}
