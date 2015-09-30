@@ -44,7 +44,8 @@ time and number of descendents by putting them onto the same scale.
 Normalised time is calculated as the time when the clade appeared (0)
 to when it went it extinct (1). Normalise number of descendents is
 rescaled by setting the smallest size of the clade to 0 and the
-largest size to 1.
+largest size to 1. Black line indicates the mean while red dashed
+indicate the SD.
 }
 \examples{
 library (MoreTreeTools)
@@ -74,7 +75,7 @@ plotClades (clades=clades.ind, i=selection, merge=TRUE)
 # it is difficult to detect a difference in clade shape
 # with so few time steps. Instead let's load some generated
 # test clades
-load ('testclades')
+data ('testclades')
 # this loads 'unif.clades' and 'arch.clades'
 plotClades (clades=unif.clades, i=1:ncol (unif.clades), merge=TRUE)
 plotClades (clades=arch.clades, i=1:ncol (arch.clades), merge=TRUE)

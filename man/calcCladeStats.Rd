@@ -58,7 +58,7 @@ plotClades (clades=clades.ind, i=selection, merge=TRUE)
 # it is difficult to detect a difference in clade shape
 # with so few time steps. Instead let's load some generated
 # test clades
-load ('testclades')
+data ('testclades')
 # this loads 'unif.clades' and 'arch.clades'
 plotClades (clades=unif.clades, i=1:ncol (unif.clades), merge=TRUE)
 plotClades (clades=arch.clades, i=1:ncol (arch.clades), merge=TRUE)
