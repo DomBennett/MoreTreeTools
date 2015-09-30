@@ -6,7 +6,10 @@
 library (MoreTreeTools)
 library (testthat)
 
-# FUNCTIONS
+# TEST DATA
+data ('testclades')
+
+# TEST FUNCTIONS
 genTestClades <- function (n.clades=100, n.time=100, genfunc) {
   # generate a clade and plot with clade plot
   # genfunc can be random in different ways to test
@@ -45,7 +48,33 @@ genArch <- function (n) {
   res ^ max (res)
 }
 
+# RUNNING TESTS
 context ('Testing \'calc-methods\'')
+test_that ('getCladeSuccess([basic]) works', {
+  
+})
+
+test_that ('calcCladeStats([basic]) works', {
+  # calc stats for test clades
+  # make sure CM and CG are as expected
+  arch.stats <- calcCladeStats (arch.clades)
+  arch.cm <- signif (mean (arch.stats$cm), 1)
+  arch.cg <- signif (mean (arch.stats$cg), 1)
+  expect_that (arch.cm, equals (0.5))
+  unif.stats <- calcCladeStats (unif.clades)
+  unif.cm <- signif (mean (unif.stats$cm), 1)
+  unif.cg <- signif (mean (unif.stats$cg), 1)
+  expect_that (unif.cm, equals (0.5))
+  expect_that (unif.cg, is_more_than (arch.cg))
+})
+
+test_that ('plotClades([merge=FALSE]) works', {
+  # simple class test
+  p <- plotClades (clades=arch.clades)
+  class.bool <- all (class (p) %in% c ("gg", "ggplot"))
+  expect_true (class.bool)
+})
+
 test_that ('plotClades([merge=TRUE]) works', {
   # simple class test
   test.clades <- genTestClades (n.clades=10, n.time=10, genUnif)
