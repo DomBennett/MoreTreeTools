@@ -4,11 +4,15 @@
 \alias{getCladeSuccess}
 \title{Clade success through time}
 \usage{
-getCladeSuccess(trees, ind = FALSE, count.extants = FALSE,
+getCladeSuccess(trees, ind = FALSE, count.extincts = FALSE,
   time.intervals = 1:length(trees))
 }
 \arguments{
 \item{trees}{}
+
+\item{ind}{boolean, use independent counting? Deafult FALSE}
+
+\item{count.extincts}{boolean, count extinct and extant tips? Default FALSE}
 
 \item{time.intervals}{vector of time represented by each tree in trees}
 
@@ -26,8 +30,20 @@ the 'node.label' slot of the Phylo class.
 
 Takes list of trees generated from runEDBMM(record=TRUE).
 
-Note, a clade in this function is defined as any node with two
-descending branches each with extant tips.
+Setting 'ind' (or independent) as TRUE will implement a counting
+method that attempts to count descendents unique to the clade by
+preventing double counting in decsendent clades. Independent
+counting works by limiting the maximum clade count to the minimum
+of the descendant counts of the two daughter clades. If one of the
+daughter clades continues to speciate while the other goes extinct
+then the parent clade of the two will be limited to 0 rather than
+the size of a single daughter clade.
+
+'time.intervals' is a vector of time steps represented by each tree.
+Default is 1 to length of number of trees.
+
+Setting 'count.extincts' to TRUE will count both extinct and extant
+tips through time.
 }
 \examples{
 library (MoreTreeTools)

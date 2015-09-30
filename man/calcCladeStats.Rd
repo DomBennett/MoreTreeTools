@@ -7,9 +7,8 @@
 calcCladeStats(clades)
 }
 \arguments{
-\item{clades}{}
-
-\item{tree}{phylogenetic tree (ape class)}
+\item{clades}{dataframe where columns are clades and rows are numbers
+of descendents by time step as returned by getCladeSuccess()}
 }
 \description{
 Return a dataframe of stats for dataframe produced from getCladeSuccess().
@@ -17,13 +16,19 @@ Return a dataframe of stats for dataframe produced from getCladeSuccess().
 \details{
 The function calculates the following statistics for each clade:
 
-* tot.size: the total number of tips in the clade through time
-* max.size: the maximum number of tips in the clade in one time step
-* time.span: the number of time steps the clade existed
-* start: the starting time step
-* end: the ending time step
-* cm: the centre of mass of the clade
-* cg: the centre of gravity of the clade
+tot.size: the total number of tips in the clade through time
+
+max.size: the maximum number of tips in the clade in one time step
+
+time.span: the number of time steps the clade existed
+
+start: the starting time step
+
+end: the ending time step
+
+cm: the centre of mass of the clade
+
+cg: the centre of gyration of the clade
 }
 \examples{
 library (MoreTreeTools)
@@ -60,16 +65,8 @@ plotClades (clades=arch.clades, i=1:ncol (arch.clades), merge=TRUE)
 # now we can see a difference
 }
 \references{
-No references yet!
-\url{https://github.com/DomBennett/MoreTreeTools}.
-
 Gould, S. J., Gilinsky, N. L., & German, R. Z. (1987). Asymmetry of
 lineages and the direction of evolutionary time. Science (New York, N.Y.),
 236(4807), 1437–1441.
 }
-\keyword{ecology}
-\keyword{evolution}
-\keyword{manipulation}
-\keyword{palaeontology}
-\keyword{phylogeny}
 
