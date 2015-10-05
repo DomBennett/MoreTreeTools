@@ -1,3 +1,93 @@
+#' @name treeplot
+#' @title Plot tree through time
+#' @description Return a geom_object() of a phylogenetic tree through time.
+#' Requires tree given to be rooted, time callibrated and bifurcating.
+#' @detials No details
+#' @param tree
+#' @export
+#' @examples
+#' tree <- rtree (50)  # random tree with fossils
+#' plot (tree)  # ape plot
+#' treeplot (tree)  # treeplot
+
+# TODO:
+# 1. develop merging algorithm for colouring branches
+# 2. Take tree data from Newick file efficiently
+# 3. fix line overlap problem (try reversing line plotting order)
+# 4. reverse x axis
+# 5. add tips option
+# 6. test
+
+treeplot <- function (tree) {
+  # internal
+  mkline <- function (x1, y, edge) {
+    if (length (edge) == 2) {
+      # run recursively for both
+      mkline (x1, y[1], edge[1])
+      mkline (x1, y[2], edge[2])
+    } else if (length (edge) == 1){
+      # find the next node on the edge
+      next.node <- tree$edge[edge,2]
+      # get n.children
+      n.children <- length (getChildren (tree, next.node))
+      # get the length of the edge
+      x2 <- x1 + tree$edge.length[edge]
+      l.data <- data.frame (x=c(x1, x2), y=c(y, y), edge)
+      p.data <<- rbind (p.data, l.data)
+      # run again for next edge
+      next.edge <- which (tree$edge[ ,1] == next.node)
+      if (next.node <= length (tree$tip.label)) {
+        #t.data <<- data.frame (x=(x2+1/N), y=y,
+        #                       label=tree$tip.label[next.node])
+      } else {
+        # use children to determine y
+        y.length <- n.children / N
+        ys <- c (y-(y.length/2), y+(y.length/2))
+        # add vertical connector
+        l.data <- data.frame (x=c(x2, x2), y=ys, edge)
+        p.data <<- rbind (p.data, l.data)
+        # move on to next edge
+        mkline (x2, ys, next.edge)
+      }
+    } else {
+      stop ('Invalid tree')
+    }
+  }
+  if (!is.rooted (tree)) {
+    stop ('Tree must be rooted')
+  }
+  if (!is.binary.tree (tree)) {
+    stop ('Tree must be binary')
+  }
+  if (is.null (tree$edge.length)) {
+    stop ('Tree must have branch lengths')
+  }
+  # init plot data
+  N <- length (tree$tip.label)
+  x1 <- 0
+  y <- c (0, 1)
+  node <- length (tree$tip.label) + 1
+  edge <- which (tree$edge[ ,1] == node)
+  p.data <- data.frame (x=c(0, 0), y=c(0, 1),
+                        edge=c (0,0))
+  #t.data <- data.frame (x=NA, y=NA, label=NA)
+  mkline (x1, c (0, 1), edge)
+  # set ggplot environment parameters
+  theme.opts <- theme(panel.background = element_rect(fill = "black"),
+                  axis.title.y = element_blank(),
+                  axis.text.y = element_blank(),
+                  panel.grid.major.y = element_blank(),
+                  panel.grid.minor.y = element_blank())
+  # make plot
+  p <- ggplot (p.data, aes (x=x, y=y, group=edge)) +
+    geom_line (aes (colour=edge, size=edge), size=2) +
+    xlab ('Time') +
+    scale_colour_gradient2(low="blue", mid='red',
+                           high='yellow', name="Diversity") +
+    theme.opts
+  p
+}
+
 #' @name blockplot
 #' @title Plot Blocks for Detecting Phylogenetic Signal (experimental)
 #' @description Experimental plot function for visualing phylogenetic signal in
