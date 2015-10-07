@@ -1,5 +1,76 @@
+#' @name getNodeStats
+#' @title Get node statistics
+#' @description Return dataframe of number of children, age and
+#' previous connecting node of every node in tree.
+#' @details Assumes tree is rooted, bifurcating and time callibrated.
+#' 
+#' Use ignore.tips to specify tips of tree to ignore when counting
+#' children.
+#' @template base_template
+#' @param nodes numeric vector of nodes, default 'all'
+#' @param ignore.tips tips to ignore when counting, default NULL
+#' @export
+#' @examples
+#' tree <- rtree (100)
+#' node.stats <- getNodeStats (tree)
+
+getNodeStats <- function (tree, nodes='all', ignore.tips=NULL) {
+  .calc <- function (node) {
+    children <- getChildren (tree, node)
+    children <- children[!children %in% ignore.tips]
+    n.children <- length (children)
+    age <- getAge (tree, node=node)[ ,2]
+    previous.node <- tree$edge[node == tree$edge[ ,2], 1]
+    if (length (previous.node) == 0) {
+      previous.node <- NA
+    }
+    data.frame (n.children, age, previous.node)
+  }
+  if (nodes[1] == 'all') {
+    nodes <- 1:tree$Nnode + length (tree$tip.label)
+  }
+  loop.data <- data.frame (node=nodes, stringsAsFactors=FALSE)
+  mdply (.data=loop.data, .fun=.calc)
+}
+
+#' @name getEdgeStats
+#' @title Get edge statistics
+#' @description Return dataframe of first node of edge, second node of edge,
+#' their ages and the number of children descending from the edge.
+#' @details Assumes tree is rooted, bifurcating and time callibrated.
+#' 
+#' Use ignore.tips to specify tips of tree to ignore when counting
+#' children.
+#' @template base_template
+#' @param edges numeric vector of edges, default 'all'
+#' @param ignore.tips tips to ignore when counting, default NULL
+#' @export
+#' @examples
+#' tree <- rtree (100)
+#' edge.stats <- getEdgeStats (tree)
+
+getEdgeStats <- function (tree, edges='all', ignore.tips=NULL) {
+  .calc <- function (edge) {
+    node.1 <- tree$edge[edge, 1]
+    node.2 <- tree$edge[edge, 2]
+    age.1 <- getAge (tree, node=node.1)[ ,2]
+    age.2 <- getAge (tree, node=node.2)[ ,2]
+    children <- getChildren (tree, node.2)
+    children <- children[!children %in% ignore.tips]
+    n.children <- length (children)
+    res <- data.frame (node.1, node.2, age.1, age.2,
+                       n.children)
+    return (res)
+  }
+  if (edges[1] == 'all') {
+    edges <- 1:nrow (tree$edge)
+  }
+  loop.data <- data.frame (edge=edges, stringsAsFactors=FALSE)
+  mdply (.data=loop.data, .fun=.calc)
+}
+
 #' @name getOutgroup
-#' @title Find outgroup in a tree from tips
+#' @title Get outgroup in a tree from tips
 #' @description Return the outgroup tip of a tree from a vector of tips given.
 #' @details Note, if polytomies occur in the tree, outgroup maybe a vector.
 #' @template base_template
@@ -35,7 +106,7 @@ getExtant <- function (tree, tol=1e-08) {
 }
 
 #' @name getChildren
-#' @title Return descendant species from a node
+#' @title Get descendant species from a node
 #' @description Return all tip labels that descend from a specifed node.
 #' @details No details
 #' @template base_template
@@ -74,7 +145,7 @@ getChildren <- function(tree, node, display = FALSE) {
 }
 
 #' @name getSize
-#' @title Return the size of a phylogenetic tree
+#' @title Get the size of a phylogenetic tree
 #' @description Return either the number of tips, the total branch length
 #' or the root to tip distance of a phylogenetic tree
 #' @details I often need to quickly work out the size of a tree. This often means
@@ -99,7 +170,7 @@ getSize <- function (tree, type = c ('ntips', 'pd', 'rtt')) {
 }
 
 #' @name getAge
-#' @title Return age of node or edge
+#' @title Get age of node or edge
 #' @description Return data.frame of age of tip, internal node or age range of
 #' an edge (so long as the tree provided is time calibrated with branch lengths).
 #' @details First calculates the root to tip distance, then calculates
@@ -170,7 +241,7 @@ getAge <- function (tree, node='all', edge=NULL) {
 }
 
 #' @name getSister
-#' @title Return sister node
+#' @title Get sister node
 #' @description Return sister node of node(s) given, default will
 #' return sister nodes of all internal nodes.
 #' @details A sister node is defined as the other node descending
@@ -208,7 +279,7 @@ getSister <- function (tree, node = 'all') {
 }
 
 #' @name getParent
-#' @title Return parent node
+#' @title Get parent node
 #' @description Return parent node of a node or a vector of tips
 #' @template base_template
 #' @param node number indicating node
@@ -255,7 +326,7 @@ getParent <- function (tree, node=NULL, tips=NULL) {
 }
 
 #' @name getEdges
-#' @title Return edges
+#' @title Get edges
 #' @description Return all children edges from a node,
 #'  or all edges connected to tips based on three different methods
 #' @details If node specified, all edges that descend from specified node are returned
@@ -355,7 +426,7 @@ getEdges <- function (tree, node = NULL, tips = NULL, type = 1) {
 }
 
 #' @name getNodes
-#' @title Return parent nodes
+#' @title Get parent nodes
 #' @description Return all nodes that connect the specified node to the root
 #' @details No details
 #' @template base_template
@@ -376,7 +447,7 @@ getNodes <- function (tree, node) {
 }
 
 #' @name getClades
-#' @title Return all children of each node
+#' @title Get all children of each node
 #' @description All children for each node in the tree are returned.
 #' @details Returns a list of lists: 'clade.children' contains all the children of each clade,
 #'  'clade.node' contains the clade number of each clade in clade.children.
@@ -403,7 +474,7 @@ getClades <- function (tree) {
 }
 
 #' @name getNodeLabels
-#' @title Return node labels based on online taxonomic database
+#' @title Get node labels based on online taxonomic database
 #' @description Return names of each node in tree based on searching tip labels
 #'  in the Global Names Resolver \url{http://resolver.globalnames.org/}
 #' @details For each node, all the children are searched, the taxonomic lineages returned and
@@ -451,7 +522,7 @@ getNodeLabels <- function (tree, all = FALSE, datasource = 4) {
 }
 
 #' @name getSubtrees
-#' @title Return non-redundant trees of clades from a phylogenetic tree
+#' @title Get non-redundant trees of clades from a phylogenetic tree
 #' @description Extract subtrees from a phylogenetic tree within a specified range of
 #' number of tips, where each subtree returned has tips unique to it.
 #' @details This functions searches through all the nodes in a tree, it
