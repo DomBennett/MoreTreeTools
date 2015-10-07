@@ -1,3 +1,63 @@
+#' @name calcEdgeDiversity
+#' @title Calculate the diversity of edges within set time intervals
+#' @description Return a dataframe of edge number and a count
+#' based on the number descendents within n.intervals uniformly
+#' spaced time intervals.
+#' @details Intervals are unifromely spaced from the root to the tip
+#' of the tree. Output can be provided to treeplot for colouring edges,
+#' see example.
+#' @template base_template
+#' @param n.intervals number of intervals
+#' @export
+#' @examples
+#' tree <- rtree (100)
+#' edge.diversity <- calcEdgeDiversity (tree, n.intervals=4)
+#' # convert to logged z-score to increase colour spectrum in plot
+#' edge.diversity$count <- log (edge.diversity$count)
+#' edge.diversity$col <- (edge.diversity$count - mean (edge.diversity$count)) / sd (edge.diversity$count)
+#' treeplot (tree, edge.cols=edge.diversity, legend.title='Diversity')
+
+# TODO:
+# - use plyr
+# - test
+
+calcEdgeDiversity <- function (tree, n.intervals) {
+  edge.stats.ref <- getEdgeStats (tree)
+  res <- data.frame (edge=NA, count=NA)
+  tree.age <- getSize (tree, 'rtt')
+  ts <- seq (from=tree.age, to=0, length.out=n.intervals+1)
+  for (i in 2:length(ts)) {
+    t0 <- ts[i-1]
+    t1 <- ts[i]
+    # find all tip nodes younger than t1
+    ignore.tips <- NULL
+    for (j in 1:length (tree$tip.label)) {
+      tip.age <- getAge (tree, node=i)
+      if (tip.age$age < t1) {
+        ignore.tips <- c (ignore.tips, tree$tip.label[j])
+      }
+    }
+    # find all edges within age range
+    edges <- which (edge.stats.ref$age.1 <= t0 & edge.stats.ref$age.1 >= t1)
+    # calc edge stats ignoring ignore.tips
+    edge.stats <- getEdgeStats (tree, edges=edges, ignore.tips=ignore.tips)
+    # identify all edges that cut through time interval
+    # add 1 to all connecting nodes to the cutters
+    cutters <- edge.stats$age.1 > t1 & edge.stats$age.2 < t1
+    for (cutter in which (cutters)) {
+      connecting.nodes <- getNodes (tree, node=edge.stats[cutter, 'node.2'])
+      edge.stats$n.children <- edge.stats$n.children +
+        as.numeric (edge.stats$node.2 %in% connecting.nodes)
+    }
+    edge.stats$n.children <- edge.stats$n.children + as.numeric (cutters)
+    # add to res
+    temp <- data.frame (edge=edge.stats$edge,
+                        count=edge.stats$n.children)
+    res <- rbind (res, temp)
+  }
+  res[-1, ]
+}
+
 #' @name reduceTree
 #' @title Reduce tree by taxonomic rank
 #' @description Reduce tips by identifying tips in the same taxonomic
