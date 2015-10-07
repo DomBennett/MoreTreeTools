@@ -18,7 +18,7 @@
 # 5. add tips option
 # 6. test
 
-treeplot <- function (tree) {
+treeplot <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='') {
   # internal
   mkline <- function (x1, y, edge) {
     if (length (edge) == 2) {
@@ -72,19 +72,37 @@ treeplot <- function (tree) {
                         edge=c (0,0))
   #t.data <- data.frame (x=NA, y=NA, label=NA)
   mkline (x1, c (0, 1), edge)
+  if (!is.null (edge.cols)) {
+    matched.is <- match (p.data$edge, edge.cols$edge)
+    p.data$col <- edge.cols$col[matched.is]
+  }
+  if (!is.null (edge.sizes)) {
+    matched.is <- match (p.data$edge, edge.sizes$edge)
+    p.data$size <- edge.sizes$col[matched.is]
+  }
+  p <- ggplot (p.data, aes (x=x, y=y, group=edge))
+  colscale <- scale_colour_gradient2 (low="blue", mid='white',
+                                      high='red', name=legend.title)
+  if (all (c ('col', 'size') %in% names (p.data))) {
+    p <- p + geom_line (aes (colour=col, size=size)) + colscale
+  } else if ('size' %in% names (p.data)) {
+    p <- p + geom_line (aes (size=size), colour='white')
+  } else if ('col' %in% names (p.data)) {
+    p <- p + geom_line (aes (colour=col), size=2)  + colscale
+  } else {
+    p <- p + geom_line (colour='white', size=2)
+  }
   # set ggplot environment parameters
-  theme.opts <- theme(panel.background = element_rect(fill = "black"),
-                  axis.title.y = element_blank(),
-                  axis.text.y = element_blank(),
-                  panel.grid.major.y = element_blank(),
-                  panel.grid.minor.y = element_blank())
-  # make plot
-  p <- ggplot (p.data, aes (x=x, y=y, group=edge)) +
-    geom_line (aes (colour=edge, size=edge), size=2) +
-    xlab ('Time') +
-    scale_colour_gradient2(low="blue", mid='red',
-                           high='yellow', name="Diversity") +
-    theme.opts
+  theme.opts <- theme(panel.background = element_rect(fill="gray15"),
+                      axis.title.y = element_blank(),
+                      axis.ticks.y =element_blank(),
+                      axis.text.y = element_blank(),
+                      panel.grid.major.y = element_blank(),
+                      panel.grid.minor.y = element_blank(),
+                      panel.grid.major.x = element_line(colour="black"),
+                      panel.grid.minor.x = element_line(colour="gray5"))
+  
+  p <- p + xlab ('Time') + theme.opts
   p
 }
 
