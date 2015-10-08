@@ -2,7 +2,7 @@
 #' @title Plot tree through time
 #' @description Return a geom_object() of a phylogenetic tree through time.
 #' Requires tree given to be rooted, time callibrated and bifurcating.
-#' @detials No details
+#' @details No details
 #' @param tree
 #' @export
 #' @examples
