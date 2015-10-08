@@ -28,7 +28,21 @@ hominins.clades <- list (clade.children = clade.children,
 
 # RUNNING
 context ('Testing \'get-methods\'')
-test_that ('getOutgroup() works',{
+test_that ('getNodeStats([basic]) works', {
+  tree <- rtree (25)
+  res <- getNodeStats (tree)
+  expect_that (nrow (res), equals (tree$Nnode))
+  expect_that (max (res$n.children), equals (25))
+})
+
+test_that ('getEdgeStats([basic]) works', {
+  tree <- rtree (25)
+  res <- getEdgeStats (tree)
+  expect_that (nrow (res) == nrow (tree$edge), is_true ())
+  expect_that (max (res$n.children), is_less_than (25))
+})
+
+test_that ('getOutgroup([basic]) works',{
   tips <- hominoids$tip.label[-1]
   tips <- c (sample (tips, 3), "Macaca mulatta")
   outgroup <- getOutgroup (hominoids, tips)
