@@ -17,45 +17,56 @@
 #' edge.diversity$col <- (edge.diversity$count - mean (edge.diversity$count)) / sd (edge.diversity$count)
 #' treeplot (tree, edge.cols=edge.diversity, legend.title='Diversity')
 
-# TODO:
-# - use plyr
-# - test
-
 calcEdgeDiversity <- function (tree, n.intervals) {
-  edge.stats.ref <- getEdgeStats (tree)
-  res <- data.frame (edge=NA, count=NA)
-  tree.age <- getSize (tree, 'rtt')
-  ts <- seq (from=tree.age, to=0, length.out=n.intervals+1)
-  for (i in 2:length(ts)) {
-    t0 <- ts[i-1]
-    t1 <- ts[i]
-    # find all tip nodes younger than t1
-    ignore.tips <- NULL
-    for (j in 1:length (tree$tip.label)) {
-      tip.age <- getAge (tree, node=i)
+  # internal
+  .count <- function (i) {
+    .findIgnoreTips <- function (tip) {
+      node <- which (tip == tree$tip.label)
+      tip.age <- getAge (tree, node=node)
       if (tip.age$age < t1) {
-        ignore.tips <- c (ignore.tips, tree$tip.label[j])
+        ignore.tips <<- c (tip, ignore.tips)
       }
     }
-    # find all edges within age range
-    edges <- which (edge.stats.ref$age.1 <= t0 & edge.stats.ref$age.1 >= t1)
-    # calc edge stats ignoring ignore.tips
-    edge.stats <- getEdgeStats (tree, edges=edges, ignore.tips=ignore.tips)
-    # identify all edges that cut through time interval
-    # add 1 to all connecting nodes to the cutters
-    cutters <- edge.stats$age.1 > t1 & edge.stats$age.2 < t1
-    for (cutter in which (cutters)) {
-      connecting.nodes <- getNodes (tree, node=edge.stats[cutter, 'node.2'])
-      edge.stats$n.children <- edge.stats$n.children +
+    .accountForCutters <- function (cutter) {
+      connecting.nodes <-
+        getNodes (tree, node=edge.stats[cutter, 'node.2'])
+      n.children <<- n.children +
         as.numeric (edge.stats$node.2 %in% connecting.nodes)
     }
-    edge.stats$n.children <- edge.stats$n.children + as.numeric (cutters)
-    # add to res
-    temp <- data.frame (edge=edge.stats$edge,
-                        count=edge.stats$n.children)
-    res <- rbind (res, temp)
+    t0 <- ts[i-1]
+    t1 <- ts[i]
+    # find all edges within age range
+    edges <- which (edge.stats.ref$age.1 <= t0 &
+                      edge.stats.ref$age.1 >= t1)
+    if (length (edges) > 1) {
+      # find all tip nodes younger than t1
+      ignore.tips <- NULL
+      m_ply (.data=data.frame (tip=tree$tip.label, stringsAsFactors=FALSE),
+             .fun=.findIgnoreTips)
+      # calc edge stats ignoring ignore.tips
+      edge.stats <- getEdgeStats (tree, edges=edges,
+                                  ignore.tips=ignore.tips)
+      # identify all edges that cut through time interval
+      # add 1 to all connecting nodes to the cutters
+      cutters <- edge.stats$age.1 > t1 & edge.stats$age.2 < t1
+      n.children <- edge.stats$n.children
+      m_ply (.data=data.frame (cutter=which (cutters)),
+             .fun=.accountForCutters)
+      n.children <- n.children + as.numeric (cutters)
+      # add to res
+      temp <- data.frame (edge=edge.stats$edge,
+                          count=n.children)
+      return (temp)
+    }
   }
-  res[-1, ]
+  if (n.intervals < 2) {
+    stop ('n.intervals must be greater than or equal to 2')
+  }
+  edge.stats.ref <- getEdgeStats (tree)
+  tree.age <- getSize (tree, 'rtt')
+  ts <- seq (from=tree.age, to=0, length.out=n.intervals+1)
+  mdply (.data=data.frame (i=2:length (ts)),
+         .fun=.count)[ ,-1]
 }
 
 #' @name reduceTree
