@@ -11,6 +11,17 @@ data ('catarrhines')
 
 # RUNNING TESTS
 context ('Testing \'calc-methods\'')
+test_that ('calcEdgeDiversity([basic]) works', {
+  tree <- rtree (25)
+  res <- calcEdgeDiversity (tree, n.intervals=2)
+  # make sure all edges are accounted for
+  expect_that (nrow (res) == nrow (tree$edge), is_true ())
+  tip.edges <- which (tree$edge[ ,2] < getSize (tree))
+  tip.edges <- which (res$edge %in% tip.edges)
+  # make sure all tip edges are equal to 1
+  expect_that (all (res$count[tip.edges] == 1), is_true ())
+})
+
 test_that ('reduceTree([basic]) works', {
   # There are 23 Catarrhine genera
   res <- reduceTree (catarrhines, 'genus')
