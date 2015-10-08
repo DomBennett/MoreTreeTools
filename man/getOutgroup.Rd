@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getOutgroup}
 \alias{getOutgroup}
-\title{Find outgroup in a tree from tips}
+\title{Get outgroup in a tree from tips}
 \usage{
 getOutgroup(tree, tips)
 }

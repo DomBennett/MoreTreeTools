@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getNodeLabels}
 \alias{getNodeLabels}
-\title{Return node labels based on online taxonomic database}
+\title{Get node labels based on online taxonomic database}
 \usage{
 getNodeLabels(tree, all = FALSE, datasource = 4)
 }

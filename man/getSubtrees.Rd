@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getSubtrees}
 \alias{getSubtrees}
-\title{Return non-redundant trees of clades from a phylogenetic tree}
+\title{Get non-redundant trees of clades from a phylogenetic tree}
 \usage{
 getSubtrees(tree, min.n, max.n, verbose = FALSE)
 }

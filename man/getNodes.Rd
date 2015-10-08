@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getNodes}
 \alias{getNodes}
-\title{Return parent nodes}
+\title{Get parent nodes}
 \usage{
 getNodes(tree, node)
 }

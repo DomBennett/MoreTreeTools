@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getAge}
 \alias{getAge}
-\title{Return age of node or edge}
+\title{Get age of node or edge}
 \usage{
 getAge(tree, node = "all", edge = NULL)
 }

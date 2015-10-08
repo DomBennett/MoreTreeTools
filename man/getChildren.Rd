@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getChildren}
 \alias{getChildren}
-\title{Return descendant species from a node}
+\title{Get descendant species from a node}
 \usage{
 getChildren(tree, node, display = FALSE)
 }

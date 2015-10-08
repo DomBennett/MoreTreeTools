@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getClades}
 \alias{getClades}
-\title{Return all children of each node}
+\title{Get all children of each node}
 \usage{
 getClades(tree)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getEdges}
 \alias{getEdges}
-\title{Return edges}
+\title{Get edges}
 \usage{
 getEdges(tree, node = NULL, tips = NULL, type = 1)
 }

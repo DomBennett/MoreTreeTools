@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getParent}
 \alias{getParent}
-\title{Return parent node}
+\title{Get parent node}
 \usage{
 getParent(tree, node = NULL, tips = NULL)
 }

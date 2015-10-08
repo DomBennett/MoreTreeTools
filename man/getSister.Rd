@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getSister}
 \alias{getSister}
-\title{Return sister node}
+\title{Get sister node}
 \usage{
 getSister(tree, node = "all")
 }

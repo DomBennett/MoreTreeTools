@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-methods.R
 \name{getSize}
 \alias{getSize}
-\title{Return the size of a phylogenetic tree}
+\title{Get the size of a phylogenetic tree}
 \usage{
 getSize(tree, type = c("ntips", "pd", "rtt"))
 }

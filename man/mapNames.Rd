@@ -44,6 +44,9 @@ range of possible mappings.
 
 For non-time-callibrated or trees without branch lengths, the function using taxonomic
 distance for random placement and returns a tree without branch lengths.
+
+Does not require trees to be bifurcating, but will randomly resolve polytomies for
+every iteration if not.
 }
 \examples{
 # bring in the catarrhines data
