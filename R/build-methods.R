@@ -116,86 +116,125 @@ addTip <- function (tree, edge, tip.name, node.age,
 
 #' @name removeTip
 #' @title Remove a tip from a phylogenetic tree
-#' @description Remove a tip from a phylogenetic tree.
-#' @details Return a tree with specified tip dropped. This function
-#' differs from \code{ape}'s \code{drop.tip} as it works with
-#' \code{MoreTreeTools}' node labelling convention.
+#' @description Remove tips from a phylogenetic tree
+#' @details Based on \code{ape}'s \code{drop.tip} but with
+#' \code{preserve.age}. This will ensure
+#' the root to tip distance of the tree is maintained by adding length
+#' to next immediate internal edge whenever the removal of a tip
+#' leads to a reduction in a tree's age. If root node is lost, then
+#' lost edge length is added to \code{root.edge} slot.
 #' @template base_template
-#' @param tip.name of tip to be dropped
+#' @param tips vector of tip names
+#' @param preserve.age maintain the root to tip distance of the tree
 #' @export
 #' @examples
-#' # example.var <- exampleFun (test.data)
+#' tree <- rtree (10)
+#' par (mfrow=c (1,3))
+#' plot (tree)
+#' plot (removeTip (tree, tips=c ('t1', 't2', 't3'), preserve.age=FALSE))
+#' plot (removeTip (tree, tips=c ('t1', 't2', 't3'), preserve.age=TRUE), root.edge=TRUE)
 
-removeTip <- function (tree, tip.name) {
-  ## TODO: better to work out a way to work with ape's
-  ##  nodelabels rather than do all this!!
-  edges.to.drop <- c ()
-  # find connecting nodes and edges
-  tip.node <- which (tree$tip.label == tip.name)
-  tip.edge <- which (tree$edge[ ,2] == tip.node)
-  edges.to.drop <- c (edges.to.drop, tip.edge)
-  internal.node <- tree$edge[tip.edge, 1]
-  # if internal node is root, there is no internal edge
-  if (internal.node != length (tree$tip.label) + 1) {
-    internal.edge <- which (tree$edge[ ,2] == internal.node)
-    edges.to.drop <- c (edges.to.drop, internal.edge)
-    # if internal node has more than 1 child edge, must
-    #  add this length to the already existing edge
-    if (sum (tree$edge[, 1] == internal.node) > 1) {
-      corres.edge <- which (tree$edge[, 1] == internal.node)
-      corres.edge <- corres.edge[corres.edge != tip.edge]
-      corres.node <- tree$edge[corres.edge, 2]
-      internal.edge.length <- tree$edge.length[internal.edge]
-      tree$edge.length[corres.edge] <-
-        tree$edge.length[corres.edge] + internal.edge.length
+removeTip <- function (tree, tips, preserve.age) {
+  # internal
+  .run <- function (tip.name) {
+    # names description:
+    # - tree.age, age of the tree from root to tip
+    # - root node, the node number of the root of the tree
+    # - max.node, the maximum internal node number of the tree
+    # - edges.to.drop, edge numbers that will be dropped (max 2, target and parent edges)
+    # - target.node, node number of tip.name
+    # - target.edge, connecting edge of tip node
+    # - node.1, first internal node connecting to target.node and sister.node
+    # - node.2, second internal node connecting to tree to node.1
+    # - sister.node, node of sister
+    # - sister.edge, edge of sister
+    # - parent.edge, edge of node.2 and node.1
+    # - .ori, original data provided
+    # - .mod, modified without missing elements
+    # - .new, modified with missing elements 
+    #print (tip.name)
+    # base vars
+    tree.age <- getSize (tree, 'rtt')
+    edges.ori <- edges.mod <- tree$edge
+    root.node <- length (tree$tip.label) + 1
+    max.node <- tree$Nnode + length (tree$tip.label)
+    target.node <- which (tree$tip.label == tip.name)
+    target.edge <- which (tree$edge[ ,2] == target.node)
+    edges.to.drop <- target.edge
+    node.1 <- tree$edge[target.edge, 1]
+    # get sister
+    sister.edge <- which (tree$edge[, 1] == node.1)
+    sister.edge <- sister.edge[sister.edge != target.edge]
+    sister.node <- tree$edge[sister.edge, 2]
+    if (node.1 != root.node) {
+      # get parent
+      parent.edge <- which (tree$edge[ ,2] == node.1)
+      node.2 <- tree$edge[parent.edge,1]
+      edges.to.drop <- c (edges.to.drop, parent.edge)
+      # update length of sister.edge
+      parent.edge.length <- tree$edge.length[parent.edge]
+      sister.edge.length <- tree$edge.length[sister.edge]
+      target.edge.length <- tree$edge.length[target.edge]
+      sister.edge.length.new <- sister.edge.length +
+        parent.edge.length
+      if (target.edge.length > sister.edge.length &
+            preserve.age) {
+        sister.edge.length.new <- sister.edge.length.new +
+          (target.edge.length - sister.edge.length)
+      }
+      tree$edge.length[sister.edge] <- sister.edge.length.new
+      # replace node.1 with node.2 for sister.edge
+      edges.mod[sister.edge, 1] <- node.2
+      # remove edges to drop
+      edges.new <- edges.mod[-edges.to.drop, ]
+      # re-number nodes
+      # remove 1 from all nodes greater than or equal to
+      #  the node.1
+      edges.new[edges.new[ ,1] >= node.1, 1] <-
+        edges.new[edges.new[ ,1] >= node.1, 1] - 1
+      edges.new[edges.new[ ,2] >= node.1, 2] <-
+        edges.new[edges.new[ ,2] >= node.1, 2] - 1
+      # remove 1 from all nodes above tip node
+      edges.new[edges.new[ ,1] > target.node,1] <-
+        edges.new[edges.new[ ,1] > target.node,1] - 1
+      edges.new[edges.new[ ,2] > target.node,2] <-
+        edges.new[edges.new[ ,2] > target.node,2] - 1
+    } else {
+      # if node is root, there is no parent edge, must remove sister
+      edges.to.drop <- c (edges.to.drop, sister.edge)
+      # remove edges to drop
+      edges.new <- tree$edge[-edges.to.drop, ]
+      # re-number nodes
+      edges.new <- edges.new - 1
+      edges.new[ ,1] <- edges.new[ ,1] - 1
+      edges.new[edges.new[ ,2] >= node.1, 2] <-
+        edges.new[edges.new[ ,2] >= node.1, 2] - 1
+      if (preserve.age) {
+        sister.node.age <- getAge (tree, node=sister.node)[ ,'age']
+        tree$root.edge <- tree.age - sister.node.age
+      }
     }
-  }
-  # remove edges to drop
-  new.edges <- tree$edge[-edges.to.drop, ]
-  # re-number nodes
-  # remove 1 from all nodes greater than or equal to
-  #  the internal node
-  new.edges[new.edges[ ,1] >= internal.node,1] <-
-    new.edges[new.edges[ ,1] >= internal.node,1] - 1
-  new.edges[new.edges[ ,2] >= internal.node,2] <-
-    new.edges[new.edges[ ,2] >= internal.node,2] - 1
-  # remove 1 from all nodes above tip node
-  new.edges[new.edges[ ,1] > tip.node,1] <-
-    new.edges[new.edges[ ,1] > tip.node,1] - 1
-  new.edges[new.edges[ ,2] > tip.node,2] <-
-    new.edges[new.edges[ ,2] > tip.node,2] - 1
-  # if there is a tripartition ...
-  #  subtract 1 to the internal node that once was
-  # (ordering has changed as a result of dropping)
-  trip.bool <- sum (new.edges[ ,1] == internal.node - 2) > 2
-  if (trip.bool) {
-    if (corres.node > tip.node) {
-      bool.edge <- new.edges[ ,2] == corres.node - 1
-      new.edges[bool.edge, 1] <-
-        new.edges[bool.edge, 1] - 1
+    # replace old with new
+    tree$edge <- edges.new
+    tree$edge.length <- tree$edge.length[-edges.to.drop]
+    tree$tip.label <- tree$tip.label[-target.node]
+    # update Nnode
+    tree$Nnode <- tree$Nnode - 1
+    # tidy up new tree
+    if (!is.null (attr (tree, "order"))) {
+      attr(tree, "order") <- NULL
     }
-    else {
-      bool.edge <- new.edges[ ,2] == corres.node
-      new.edges[bool.edge, 1] <-
-        new.edges[bool.edge, 1] - 1
-    }
+    #storage.mode (tree$edge) <- "integer"
+    #tree.c <- collapse.singles (tree)
+    tree <<- tree
   }
-  # replace old with new
-  tree$edge <- new.edges
-  tree$edge.length <- tree$edge.length[-edges.to.drop]
-  tree$tip.label <- tree$tip.label[-tip.node]
-  # update Nnode
-  tree$Nnode <- tree$Nnode - 1
-  # tidy up new tree
-  if (!is.null (attr (tree, "order"))) 
-    attr(tree, "order") <- NULL
-  if (!is.null (tree$all.node.label)) {
-    tree$all.node.label <- tree$all.node.label[c (-tip.node,
-                                          -internal.node)]
+  if (!all (tips %in% tree$tip.label)) {
+    stop ('Not all tips are in the tree')
   }
-  if (!is.null (tree$node.ages)) {
-    tree.node.ages <- tree$node.ages[c (-tip.node,
-                                        -internal.node)]
+  if (length (tips) >= (length (tree$tip.label) - 2)) {
+    stop ('Removing too many tips, smallest resulting tree is 3 tips')
   }
+  loop.data <- data.frame (tip.name=tips, stringsAsFactors=FALSE)
+  m_ply (.data=loop.data, .fun=.run)
   tree
 }
