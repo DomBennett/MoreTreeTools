@@ -26,8 +26,19 @@ test_that ('addTip([basic]) works', {
                equals (length (hominoids$tip.label) + 1))
 })
 
-test_that ('removeTip([basic]) works', {
-  res <- removeTip (hominoids, tip.name = 'Gorilla gorilla')
-  expect_that (length (res$tip.label),
-               equals (length (hominoids$tip.label) - 1))
+test_that ('removeTip([preserve.age=FALSE]) works', {
+  tree <- rtree (5)
+  res <- removeTip (tree, tips=c ('t1', 't2'), preserve.age=FALSE)
+  mat.before <- cophenetic.phylo (tree)
+  mat.after <- cophenetic.phylo (res)
+  bool <- mat.before['t3', c ('t4', 't5')] ==
+    mat.after['t3', c ('t4', 't5')]
+  expect_that (all (bool), is_true ())
+})
+
+test_that ('removeTip([preserve.age=TRUE]) works', {
+  tree <- rtree (5)
+  res <- removeTip (tree, tips=c ('t1', 't2'), preserve.age=TRUE)
+  age.before <- getSize (tree, 'rtt')
+  age.after <- getSize (res, 'rtt')
 })

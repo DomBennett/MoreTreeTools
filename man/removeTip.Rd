@@ -4,23 +4,32 @@
 \alias{removeTip}
 \title{Remove a tip from a phylogenetic tree}
 \usage{
-removeTip(tree, tip.name)
+removeTip(tree, tips, preserve.age)
 }
 \arguments{
 \item{tree}{phylogenetic tree (ape class)}
 
-\item{tip.name}{of tip to be dropped}
+\item{tips}{vector of tip names}
+
+\item{preserve.age}{maintain the root to tip distance of the tree}
 }
 \description{
-Remove a tip from a phylogenetic tree.
+Remove tips from a phylogenetic tree
 }
 \details{
-Return a tree with specified tip dropped. This function
-differs from \code{ape}'s \code{drop.tip} as it works with
-\code{MoreTreeTools}' node labelling convention.
+Based on \code{ape}'s \code{drop.tip} but with
+\code{preserve.age}. This will ensure
+the root to tip distance of the tree is maintained by adding length
+to next immediate internal edge whenever the removal of a tip
+leads to a reduction in a tree's age. If root node is lost, then
+lost edge length is added to \code{root.edge} slot.
 }
 \examples{
-# example.var <- exampleFun (test.data)
+tree <- rtree (10)
+par (mfrow=c (1,3))
+plot (tree)
+plot (removeTip (tree, tips=c ('t1', 't2', 't3'), preserve.age=FALSE))
+plot (removeTip (tree, tips=c ('t1', 't2', 't3'), preserve.age=TRUE), root.edge=TRUE)
 }
 \references{
 No references yet!
