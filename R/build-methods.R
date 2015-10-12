@@ -238,3 +238,47 @@ removeTip <- function (tree, tips, preserve.age) {
   m_ply (.data=loop.data, .fun=.run)
   tree
 }
+
+#' @name collapseTips
+#' @title Remove all tips smaller than min.length
+#' @description Return a phylo object with tip edges less than min.length
+#' removed.
+#' @details Tips are removed, but the tree age is preserved. Returned
+#' trees are therefore not the same phylogenetic tree as that given.
+#' The purpose of the function is to generate representations of
+#' trees with fewer tips for plotting purposes.
+#' 
+#' 
+#' Set iterative as TRUE to keep removing all tip edges less than min.length.
+#' @template base_template
+#' @param min.length smallest length for a tip edge
+#' @param iterative run until no tip edges less than min.length, default TRUE
+#' @export
+#' @examples
+#' tree <- rtree (100)
+#' par (mfrow = c (1,2))
+#' plot (tree, show.tip.label=FALSE, main='Full tree')
+#' tree.age <- getSize (tree, 'rtt')
+#' ctree <- collapseTips (tree, min.length=tree.age*0.1)
+#' plot (ctree, show.tip.label=FALSE, main='Collapsed tree')
+
+collapseTips <- function (tree, min.length, iterative=TRUE) {
+  while (TRUE) {
+    tip.edges <- tree$edge[ ,2] < getSize (tree)
+    drop.tip.edges <- (tree$edge.length < min.length) &
+      tip.edges
+    to.drop <- tree$tip.label[tree$edge[drop.tip.edges,2]]
+    if (length (to.drop) == 0) {
+      break
+    }
+    tree <- try (removeTip (tree, tip=to.drop, preserve.age=TRUE),
+                 silent=TRUE)
+    if (grepl ('Removing too many tips', tree[[1]][1])) {
+      stop ('min.length is too great, too many tips are being dropped')
+    }
+    if (!iterative) {
+      break
+    }
+  }
+  tree
+}
