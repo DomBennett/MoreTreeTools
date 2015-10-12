@@ -165,7 +165,11 @@ getSize <- function (tree, type = c ('ntips', 'pd', 'rtt')) {
   } else if (type == 'pd') {
     return (sum (tree$edge.length))
   } else {
-    return (max (diag (vcv.phylo (tree))))
+    age <- max (diag (vcv.phylo (tree)))
+    if (!is.null (tree$root.edge)) {
+      age <- age + tree$root.edge
+    }
+    return (age)
   }
 }
 
