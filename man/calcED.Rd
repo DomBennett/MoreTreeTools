@@ -2,7 +2,7 @@
 % Please edit documentation in R/calc-methods.R
 \name{calcED}
 \alias{calcED}
-\title{Calculate Evolutionary Distinctiveness}
+\title{Calculate Evolutionary Distinctness}
 \usage{
 calcED(tree, tips = "all", type = "FP")
 }
@@ -14,23 +14,26 @@ calcED(tree, tips = "all", type = "FP")
 \item{type}{method of ED calculation, either 'all', 'FP', 'ES' or 'PE' (default FP)}
 }
 \description{
-Calculate species evolutionary distinctiveness (ED) using one of three methods:
+Calculate species evolutionary distinctness (ED) using one of three methods:
  Fair Proportion (FP), Equal Splits (ES) or Pendant Edge (PE).
 }
 \details{
-Evolutionary distinctiveness is a measure of how much independent evolution a species
+Evolutionary distinctness is a measure of how much independent evolution a species
  represents. Multiple methods exist for its calculation all of which require an ultrametric
  phylogenetic tree. The methods used here are Pendant Edge (PE) the length of a species branch
  that connects it to the tree (Altschul and Lipman, 1990), Fair Proportion (FP) the total
  proportion of the phylogenetic tree that a species represents where each branch is equally
  divided between all descdendants (Isaac et al. 2007) and Equal Splits (ES) where branch lengths
  are equally divided between descendents at every node in the tree (Redding and Mooers 2006)
-
- N.B. \code{picante} already has a function for doing this. \code{calcED}, however, uses \code{plyr}
- vectorisation and is much faster.
 }
 \examples{
-#
+# Load catarrhine tree
+data(catarrhines)
+ed.vals <- calcED (catarrhines, type='all')
+# Which Old World monkeys are the most distinct?
+ed.vals[ed.vals$FP == min (ed.vals$FP), ]
+ed.vals[ed.vals$ES == min (ed.vals$ES), ]
+ed.vals[ed.vals$PE == min (ed.vals$PE), ]
 }
 \references{
 No references yet!
@@ -44,6 +47,9 @@ Isaac, N.J.B., Turvey, S.T., Collen, B., Waterman, C. and Baillie, J.E.M. (2007)
  Redding, D. W., and Mooers, A. Ø. (2006). Incorporating evolutionary measures into conservation
  prioritization. Conservation Biology : The Journal of the Society for Conservation Biology,
  20(6), 1670–8.
+}
+\seealso{
+\code{\link[picante]{evol.distinct}}, \code{\link{catarrhines}}
 }
 \keyword{ecology}
 \keyword{evolution}

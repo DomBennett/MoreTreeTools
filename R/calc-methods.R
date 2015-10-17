@@ -243,22 +243,21 @@ calcComPhyMets <- function(cmatrix, tree, min.spp = 2,
 }
 
 #' @name calcED
-#' @title Calculate Evolutionary Distinctiveness
-#' @description Calculate species evolutionary distinctiveness (ED) using one of three methods:
+#' @title Calculate Evolutionary Distinctness
+#' @description Calculate species evolutionary distinctness (ED) using one of three methods:
 #'  Fair Proportion (FP), Equal Splits (ES) or Pendant Edge (PE).
-#' @details Evolutionary distinctiveness is a measure of how much independent evolution a species
+#' @details Evolutionary distinctness is a measure of how much independent evolution a species
 #'  represents. Multiple methods exist for its calculation all of which require an ultrametric
 #'  phylogenetic tree. The methods used here are Pendant Edge (PE) the length of a species branch
 #'  that connects it to the tree (Altschul and Lipman, 1990), Fair Proportion (FP) the total
 #'  proportion of the phylogenetic tree that a species represents where each branch is equally
 #'  divided between all descdendants (Isaac et al. 2007) and Equal Splits (ES) where branch lengths
 #'  are equally divided between descendents at every node in the tree (Redding and Mooers 2006)
-#'  
-#'  N.B. \code{picante} already has a function for doing this. \code{calcED}, however, uses \code{plyr}
-#'  vectorisation and is much faster.
 #' @template base_template
 #' @param tips vector of tips for which ED is calculated, else 'all'
 #' @param type method of ED calculation, either 'all', 'FP', 'ES' or 'PE' (default FP)
+#' @seealso
+#' \code{\link[picante]{evol.distinct}}, \code{\link{catarrhines}}
 #' @references Isaac, N.J.B., Turvey, S.T., Collen, B., Waterman, C. and Baillie, J.E.M. (2007). 
 #'  Mammals on the EDGE: conservation priorities based on threat and phylogeny. PLoS ONE, 2, e296.
 #'  
@@ -269,7 +268,13 @@ calcComPhyMets <- function(cmatrix, tree, min.spp = 2,
 #'  20(6), 1670–8.
 #' @export
 #' @examples
-#' #
+#' # Load catarrhine tree
+#' data(catarrhines)
+#' ed.vals <- calcED (catarrhines, type='all')
+#' # Which Old World monkeys are the most distinct?
+#' ed.vals[ed.vals$FP == min (ed.vals$FP), ]
+#' ed.vals[ed.vals$ES == min (ed.vals$ES), ]
+#' ed.vals[ed.vals$PE == min (ed.vals$PE), ]
 
 calcED <- function (tree, tips = 'all', type = 'FP') {
   calcFairProportion <- function (tips) {
