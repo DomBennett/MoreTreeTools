@@ -7,6 +7,7 @@
   and edge diversity data frames generated with \code{calcEdgeDiversity}.
   
   \code{names(EDBMMtrees)} refers to:
+  
   DE -- Dead-End simulated tree, generated with sig = -1 and eps = +1
   Pan -- Panchronic simulated tree, generated with sig = -1 and eps = -1
   Hyd -- Hydra simulated tree, generated with sig = -1 and eps = 0
