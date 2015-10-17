@@ -30,7 +30,11 @@ getNodeStats <- function (tree, nodes='all', ignore.tips=NULL) {
     nodes <- 1:tree$Nnode + length (tree$tip.label)
   }
   loop.data <- data.frame (node=nodes, stringsAsFactors=FALSE)
-  mdply (.data=loop.data, .fun=.calc)
+  res <- mdply (.data=loop.data, .fun=.calc)
+  if (!is.null (tree$node.label)) {
+    res$node.label <- tree$node.label[nodes]
+  }
+  return (res)
 }
 
 #' @name getEdgeStats
@@ -66,7 +70,11 @@ getEdgeStats <- function (tree, edges='all', ignore.tips=NULL) {
     edges <- 1:nrow (tree$edge)
   }
   loop.data <- data.frame (edge=edges, stringsAsFactors=FALSE)
-  mdply (.data=loop.data, .fun=.calc)
+  res <- mdply (.data=loop.data, .fun=.calc)
+  if (!is.null (tree$edge.label)) {
+    res$edge.label <- tree$edge.label[edges]
+  }
+  return (res)
 }
 
 #' @name getOutgroup

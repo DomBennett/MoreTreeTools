@@ -217,6 +217,9 @@ removeTip <- function (tree, tips, preserve.age) {
     # replace old with new
     tree$edge <- edges.new
     tree$edge.length <- tree$edge.length[-edges.to.drop]
+    if (!is.null (tree$edge.label)) {
+      tree$edge.label <- tree$edge.label[-edges.to.drop]  
+    }
     tree$tip.label <- tree$tip.label[-target.node]
     # update Nnode
     tree$Nnode <- tree$Nnode - 1
