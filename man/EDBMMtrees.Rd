@@ -7,16 +7,22 @@
   and edge diversity data frames generated with \code{calcEdgeDiversity}.
   
   \code{names(EDBMMtrees)} refers to:
+  \itemize{
+  \item \code{DE} -- Dead-End simulated tree, generated with sig = -1 and eps = +1
+  \item \code{Pan} -- Panchronic simulated tree, generated with sig = -1 and eps = -1
+  \item \code{Hyd} -- Hydra simulated tree, generated with sig = -1 and eps = 0
+  }
   
-  DE -- Dead-End simulated tree, generated with sig = -1 and eps = +1
-  Pan -- Panchronic simulated tree, generated with sig = -1 and eps = -1
-  Hyd -- Hydra simulated tree, generated with sig = -1 and eps = 0
+  Data was generated with this \href{https://github.com/DomBennett/MoreTreeTools/tree/master/other/model_edbmm.R}{script}.
 }
 \usage{
    data (EDBMMtrees)
 }
 \format{
   \code{EDBMMtrees} is a \code{list}.
+}
+\seealso{
+  \code{\link{runEDBMM}}, \code{\link{treeplot}}
 }
 \examples{
 data (EDBMMtrees) # load object
