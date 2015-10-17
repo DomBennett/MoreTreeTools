@@ -42,3 +42,12 @@ test_that ('removeTip([preserve.age=TRUE]) works', {
   age.before <- getSize (tree, 'rtt')
   age.after <- getSize (res, 'rtt')
 })
+
+test_that ('collapseTips([basic]) works', {
+  tree <- rtree (50)
+  min.length <- getSize (tree, 'rtt')*0.1
+  res <- collapseTips (tree, min.length, iterative=TRUE)
+  tip.edges <- tree$edge[ ,2] < getSize (tree)
+  bool <- all ((tree$edge.length < min.length) & tip.edges)
+  expect_that (bool, is_false())
+})
