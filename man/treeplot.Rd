@@ -17,8 +17,35 @@ Requires tree given to be rooted, time callibrated and bifurcating.
 No details
 }
 \examples{
+# Quick example
 tree <- rtree (50)  # random tree with fossils
 plot (tree)  # ape plot
 treeplot (tree)  # treeplot
+
+
+# Example with collapseTips() + calcEdgeDiversity()
+# generate random tree
+tree <- rtree (100)
+# add edge labels to track edges after collapse
+tree$edge.label <- paste0 ('edge_', 1:nrow (tree$edge))
+# generate edge diversity using two intervals
+ed <- calcEdgeDiversity (tree, n.intervals=2)
+# iteratively drop all tip edges with > 10\% tree age
+tree.age <- getSize (tree, 'rtt')
+ctree <- collapseTips (tree, min.length=tree.age*0.1, iterative=TRUE)
+# reconstruct edge diversity data frame without dropped edges
+new.ed <- data.frame (edge.label=ctree$edge.label)
+new.ed$edge <- 1:nrow (new.ed)
+match.counts <- match (ctree$edge.label, ed$edge.label)
+new.ed$count <- ed$count[match.counts]
+# convert count to logged Z-score for maximum colour separation
+new.ed$col <- (log (new.ed$count) - mean (log (new.ed$count))) /
+  sd (log (new.ed$count))
+ed$col <- (log (ed$count) - mean (log (ed$count))) /
+  sd (log (ed$count))
+# plot before
+treeplot (tree, edge.cols=ed, legend.title='Diversity') + ggtitle ('Before collapse')
+# plot after
+treeplot (ctree, edge.cols=new.ed, legend.title='Diversity') + ggtitle ('After collapse')
 }
 
