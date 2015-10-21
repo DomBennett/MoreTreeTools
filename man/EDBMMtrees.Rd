@@ -22,20 +22,20 @@
   \code{EDBMMtrees} is a \code{list}.
 }
 \seealso{
-  \code{\link{runEDBMM}}, \code{\link{treeplot}}
+  \code{\link{runEDBMM}}, \code{\link{chromatophylo}}
 }
 \examples{
 data (EDBMMtrees) # load object
 str (edbmm.trees)  # inspect
 # plot each for comparison
-treeplot (edbmm.trees[['DE']][['tree']],
-          edge.cols=edbmm.trees[['DE']][['edge.diversity']],
-          legend.title='Diversity') + ggtitle ('DE')
-treeplot (edbmm.trees[['Pan']][['tree']],
-          edge.cols=edbmm.trees[['Pan']][['edge.diversity']],
-          legend.title='Diversity') + ggtitle ('Pan')
-treeplot (edbmm.trees[['Hyd']][['tree']],
-          edge.cols=edbmm.trees[['Hyd']][['edge.diversity']],
-          legend.title='Diversity') + ggtitle ('Hyd')
+chromatophylo (edbmm.trees[['DE']][['tree']],
+               edge.cols=edbmm.trees[['DE']][['edge.diversity']],
+               legend.title='Diversity') + ggtitle ('DE')
+chromatophylo (edbmm.trees[['Pan']][['tree']],
+               edge.cols=edbmm.trees[['Pan']][['edge.diversity']],
+               legend.title='Diversity') + ggtitle ('Pan')
+chromatophylo (edbmm.trees[['Hyd']][['tree']],
+               edge.cols=edbmm.trees[['Hyd']][['edge.diversity']],
+               legend.title='Diversity') + ggtitle ('Hyd')
 }
 \keyword{datasets}

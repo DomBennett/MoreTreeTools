@@ -1,24 +1,50 @@
-#' @name treeplot
-#' @title Plot tree through time
+#' @name chromatophylo
+#' @title Plot tree through time with coloured edges
 #' @description Return a geom_object() of a phylogenetic tree through time.
 #' Requires tree given to be rooted, time callibrated and bifurcating.
 #' @details No details
 #' @param tree
 #' @export
 #' @examples
+#' # Quick example without colours
 #' tree <- rtree (50)  # random tree with fossils
 #' plot (tree)  # ape plot
-#' treeplot (tree)  # treeplot
+#' chromatophylo (tree)  # chromatophylo
+#' 
+#' 
+#' # Example with collapseTips() + calcEdgeDiversity()
+#' # generate random tree
+#' tree <- rtree (100)
+#' # add edge labels to track edges after collapse
+#' tree$edge.label <- paste0 ('edge_', 1:nrow (tree$edge))
+#' # generate edge diversity using two intervals
+#' ed <- calcEdgeDiversity (tree, n.intervals=2)
+#' # iteratively drop all tip edges with > 10% tree age
+#' tree.age <- getSize (tree, 'rtt')
+#' ctree <- collapseTips (tree, min.length=tree.age*0.1, iterative=TRUE)
+#' # reconstruct edge diversity data frame without dropped edges
+#' new.ed <- data.frame (edge.label=ctree$edge.label)
+#' new.ed$edge <- 1:nrow (new.ed)
+#' match.counts <- match (ctree$edge.label, ed$edge.label)
+#' new.ed$count <- ed$count[match.counts]
+#' # convert count to logged Z-score for maximum colour separation
+#' new.ed$col <- (log (new.ed$count) - mean (log (new.ed$count))) /
+#'   sd (log (new.ed$count))
+#' ed$col <- (log (ed$count) - mean (log (ed$count))) /
+#'   sd (log (ed$count))
+#' # plot before
+#' chromatophylo (tree, edge.cols=ed, legend.title='Diversity') + ggtitle ('Before collapse')
+#' # plot after
+#' chromatophylo (ctree, edge.cols=new.ed, legend.title='Diversity') + ggtitle ('After collapse')
 
 # TODO:
-# 1. develop merging algorithm for colouring branches
-# 2. Take tree data from Newick file efficiently
-# 3. fix line overlap problem (try reversing line plotting order)
-# 4. reverse x axis
-# 5. add tips option
-# 6. test
+# 1. Take tree data from Newick file efficiently
+# 2. fix line overlap problem (try reversing line plotting order)
+# 3. reverse x axis
+# 4. add tips option
+# 5. test
 
-treeplot <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='') {
+chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='') {
   # internal
   mkline <- function (x1, y, edge) {
     if (length (edge) == 2) {
@@ -40,8 +66,6 @@ treeplot <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='') {
         #t.data <<- data.frame (x=(x2+1/N), y=y,
         #                       label=tree$tip.label[next.node])
       } else {
-        # use children to determine y
-        y.length <- n.children / N
         ys <- c (y-(y.length/2), y+(y.length/2))
         # add vertical connector
         l.data <- data.frame (x=c(x2, x2), y=ys, edge)
@@ -64,14 +88,14 @@ treeplot <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='') {
   }
   # init plot data
   N <- length (tree$tip.label)
+  y.length <- 1/N
   x1 <- 0
-  y <- c (0, 1)
   node <- length (tree$tip.label) + 1
   edge <- which (tree$edge[ ,1] == node)
-  p.data <- data.frame (x=c(0, 0), y=c(0, 1),
+  p.data <- data.frame (x=c(0, 0), y=c(0, y.length),
                         edge=c (0,0))
   #t.data <- data.frame (x=NA, y=NA, label=NA)
-  mkline (x1, c (0, 1), edge)
+  mkline (x1, c (0, y.length), edge)
   if (!is.null (edge.cols)) {
     matched.is <- match (p.data$edge, edge.cols$edge)
     p.data$col <- edge.cols$col[matched.is]
