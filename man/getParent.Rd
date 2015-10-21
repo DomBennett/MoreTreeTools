@@ -4,17 +4,19 @@
 \alias{getParent}
 \title{Get parent node}
 \usage{
-getParent(tree, node = NULL, tips = NULL)
+getParent(tree, node = NULL, tips = NULL, edges = NULL)
 }
 \arguments{
 \item{tree}{phylogenetic tree (ape class)}
 
-\item{node}{number indicating node}
+\item{node}{vector of number indicating node}
 
-\item{tips}{tip labels or numbers}
+\item{tips}{vector of tip labels or numbers}
+
+\item{edges}{vector of edge labels or edge numbers}
 }
 \description{
-Return parent node of a node or a vector of tips
+Return parent node of nodes, edges or a vector of tips
 }
 \references{
 No references yet!

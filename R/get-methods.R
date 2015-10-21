@@ -292,16 +292,14 @@ getSister <- function (tree, node = 'all') {
 
 #' @name getParent
 #' @title Get parent node
-#' @description Return parent node of a node or a vector of tips
+#' @description Return parent node of nodes, edges or a vector of tips
 #' @template base_template
-#' @param node number indicating node
-#' @param tips tip labels or numbers
+#' @param node vector of number indicating node
+#' @param tips vector of tip labels or numbers
+#' @param edges vector of edge labels or edge numbers
 
-getParent <- function (tree, node=NULL, tips=NULL) {
-  if (is.null (tips) & is.null (node)) {
-    stop ('Must provide either tips or nodes argument')
-  }
-  if (!is.null (node)) {
+getParent <- function (tree, node=NULL, tips=NULL, edges=NULL) {
+  if (!is.null (node) & length (node) == 1) {
     if (!is.numeric (node)) {
       stop ('Node must be numeric')
     }
@@ -313,13 +311,23 @@ getParent <- function (tree, node=NULL, tips=NULL) {
       return (node)
     }
     return (tree$edge[tree$edge[ ,2] == node, 1])
-  }
-  if (is.character (tips)) {
-    # if tips are labels
-    edges <- match (match (tips, tree$tip.label), tree$edge[,2])
+  } else if (!is.null (tips)) {
+    if (is.character (tips)) {
+      # if tips are labels
+      edges <- match (match (tips, tree$tip.label), tree$edge[,2])
+    } else {
+      # ... else they're numbers
+      edges <- match (tips, tree$edge[,2])
+    }
+  } else if (!is.null (node)) {
+    edges <- which (tree$edge[ ,2] %in% node)
+  } else if (!is.null (edges)) {
+    if (is.character (edges) & !is.null (tree$edge.label)) {
+      # assume they are labels
+      edges <- match (edges, tree$edge.label)
+    }
   } else {
-    # ... else they're numbers
-    edges <- match (tips, tree$edge[,2])
+    stop ('Must provide either edges, tips or nodes argument')
   }
   end.nodes <- tree$edge[edges, 1]
   term.node <- length (tree$tip.label) + 1

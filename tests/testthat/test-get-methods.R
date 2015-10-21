@@ -82,8 +82,8 @@ test_that ('getSize([basic]) works', {
 
 test_that ('getAge([basic]) works', {
   root.node <- length (hominoids$tip.label) + 1
-  root.age <- getAge (hominoids, root.node)
-  stem.age <- getAge (hominoids, root.node + 1)
+  root.age <- getAge (hominoids, root.node)[ ,2]
+  stem.age <- getAge (hominoids, root.node + 1)[ ,2]
   # root age should ALWAYS be greater than stem age
   expect_that (root.age > stem.age, is_true ())
 })
@@ -101,6 +101,15 @@ test_that ('getParent([node specified]) works', {
 test_that ('getParent([tips specified]) works', {
   tips <- c ('Gorilla gorilla', 'Pan troglodytes', 'Pongo pygmaeus')
   expect_that (getParent (hominoids, tips=tips), equals (20))
+})
+
+test_that ('getParents([edges specified]) works', {
+  res <- getParent (hominoids, edges=c (6, 25))
+  expect_that (res, equals (19))
+  # test with edge labels
+  hominoids$edge.label <- paste0 ('edge_', 1:nrow (hominoids$edge))
+  res <- getParent (hominoids, edges=c ('edge_6', 'edge_25'))
+  expect_that (res, equals (19))
 })
 
 test_that ('getEdges([node specified]) works', {
