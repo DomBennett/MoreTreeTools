@@ -39,10 +39,10 @@
 
 # TODO:
 # 1. Take tree data from Newick file efficiently
-# 2. fix line overlap problem (try reversing line plotting order)
-# 3. reverse x axis
-# 4. add tips option
-# 5. test
+# 2. reverse x axis
+# 3. add tips option
+# 4. test
+# 5. speed up
 
 chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='') {
   # internal

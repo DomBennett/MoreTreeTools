@@ -10,7 +10,7 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
   # init plot data
   N <- length (tree$tip.label)
   tree.age <- getSize (tree, 'rtt')
-  x.length <- tree.age/10
+  x.length <- tree.age/100
   y.length <- 1
   x1 <- 0
   node <- length (tree$tip.label) + 1
@@ -22,6 +22,7 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
   p.env$y.length <- y.length
   p.env$x.length <- x.length
   p.env$tree <- tree
+  p.env$root.node <- length (tree$tip.label) + 1
   #t.data <- data.frame (x=NA, y=NA, label=NA)
   # generate p.data
   .cpMkLine (x1, c (0, y.length), edge, p.env)
@@ -31,15 +32,14 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
     lines <- seq (from=3, to=nrow (p.env$p.data), by=2)
     m_ply (.data=data.frame (sl=lines), .fun=.cpEachSbjct, lines=lines,
            p.env=p.env)
+    #return (p.env$p.data)
+    print ('here')
     if (!p.env$overlap) {
       break
     }
   }
   # make geom_object
   p.data <- p.env$p.data
-  # correct root edge for any changes
-  p.data$y[1] <- p.data$y[3]
-  p.data$y[2] <- p.data$y[7]
   if (!is.null (edge.cols)) {
     matched.is <- match (p.data$edge, edge.cols$edge)
     p.data$col <- edge.cols$col[matched.is]
@@ -89,9 +89,13 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
       # find all edges descdning from higher edge and add y.length/2
       # find all edges descending from lower edge and remove y.length/2
       # find parent vertical edge and add and remove y.length/2
-      parent.node <- getParent (tree, edges=c (sl.edge, ql.edge))
-      parent.edge <- which (tree$edge[ ,2] == parent.node)
-      edges <- which (tree$edge[ ,1] == parent.node)
+      parent.node <- getParent (p.env$tree, edges=c (sl.edge, ql.edge))
+      if (parent.node == p.env$root.node) {
+        parent.edge <- 0
+      } else {
+        parent.edge <- which (p.env$tree$edge[ ,2] == parent.node)
+      }
+      edges <- which (p.env$tree$edge[ ,1] == parent.node)
       edge.1 <- p.data[p.data$edge == edges[1], ]
       edge.2 <- p.data[p.data$edge == edges[2], ]
       if (mean (edge.1$y) >= mean (edge.2$y)) {
@@ -101,18 +105,19 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
         higher <- edge.2$edge[1]
         lower <- edge.1$edge[1]
       }
-      higher.edges <- c (getEdges (tree, node=tree$edge[higher, 2]),
+      higher.edges <- c (getEdges (p.env$tree, node=p.env$tree$edge[higher, 2]),
                          higher)
       p.data[p.data$edge %in% higher.edges, 'y'] <-
         p.data[p.data$edge %in% higher.edges, 'y'] + y.length/2
-      lower.edges <- c (getEdges (tree, node=tree$edge[lower, 2]),
+      lower.edges <- c (getEdges (p.env$tree, node=p.env$tree$edge[lower, 2]),
                         lower)
       p.data[p.data$edge %in% lower.edges, 'y'] <-
         p.data[p.data$edge %in% lower.edges, 'y'] - y.length/2
-      p.data[p.data$edge == parent.edge, 'y'][4] <- 
-        p.data[p.data$edge == parent.edge, 'y'][4] + y.length/2
-      p.data[p.data$edge == parent.edge, 'y'][3] <- 
-        p.data[p.data$edge == parent.edge, 'y'][3] - y.length/2
+      vertical.bool <- which (p.data$edge == parent.edge)
+      vertical.bool <- vertical.bool[(length (vertical.bool) - 1):
+                                       length (vertical.bool)]
+      p.data[vertical.bool[2], 'y'] <- p.data[vertical.bool[2], 'y'] + y.length/2
+      p.data[vertical.bool[1], 'y'] <- p.data[vertical.bool[1], 'y'] - y.length/2
       # update p.data in p.env
       p.env$p.data <- p.data
     }
@@ -180,5 +185,8 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
 }
 
 # explore
-tree <- rtree (10)
+tree <- rtree (20)
+Rprof(tmp <- tempfile())
 chromatophylo (tree)
+Rprof()
+summaryRprof(tmp)
