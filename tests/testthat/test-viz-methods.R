@@ -12,11 +12,11 @@ ntips <- 10  # number of tips in the tree
 # FUNCTIONS
 init <- function () {
   # push random tree and key parameters
-  tree <<- rtree (ntips)
-  N <<- length (tree$tip.label)
+  tree <- rtree (ntips)
+  N <- length (tree$tip.label)
   tree.age <- getSize (tree, 'rtt')
-  x.length <<- tree.age/100
-  y.length <<- 1
+  x.length <- tree.age/100
+  y.length <- 1
   x1 <<- 0
   node <<- length (tree$tip.label) + 1
   edge <<- which (tree$edge[ ,1] == node)
@@ -44,7 +44,6 @@ test_that ('.cpMkLine([basic]) works', {
   res <- max (p.env$p.data$x) == getSize (tree, 'rtt')
   expect_that (res, is_true ())
 })
-
 test_that ('.cpCheckOverlap([basic]) works', {
   # 1 spacer in x and y (lines must be without 0.5 from each other)
   x.length <- y.length <- 1
@@ -88,6 +87,7 @@ test_that ('.cpCheckOverlap([basic]) works', {
 })
 
 test_that ('.cpEachQry([basic]) works', {
+  # TODO
   # init
   init ()
   .cpMkLine (x1, c (0, y.length), edge, p.env)
@@ -104,38 +104,24 @@ test_that ('.cpEachQry([basic]) works', {
   .cpEachQry (ql, p.env, avoid.edges, sbjct, sl.edge)
   expect_that (p.env$p.data, equals (p.data))
 })
-
-test_that ('.cpGetNChildren([basic]) works', {
-  # init
-  init ()
-  # sanity checks
-  .cpGetNChildren (p.env)
-  expect_that (p.env$n.children[[11]], equals (10))
-  expect_that (p.env$n.children[[1]], equals (1))
-})
-
 test_that ('.cpGetParentNode([basic]) works', {
   # init
   init ()
-  # sanity checks
-  .cpGetParentNode (p.env)
+  p.env$tree.stats <- getTreeStats (p.env$tree)
   # get random edges and make sure they match with list obj
   edges <- 1:nrow (p.env$tree$edge)
-  edges <- c (sample (edges, 1), sample (edges, 1))
-  p.node <- getParent (p.env$tree, edges=edges)
-  expect_that (p.env$parent.nodes[[edges[1]]][[edges[2]]],
-               equals (p.node))
+  p.env$ql.edge <- sample (edges, 1)
+  p.env$sl.edge <- sample (edges, 1)
+  p.node <- getParent (p.env$tree, edges=c (p.env$ql.edge,
+                                            p.env$sl.edge))
+  res <- .cpGetParentNode (p.env)
+  expect_that (res, equals (p.node))
 })
-
-test_that ('.cpGetDescendingEdges([basic]) works', {
-  # init
-  init ()
-  # sanity checks
-  .cpGetDescendingEdges (p.env)
-  # get random node and make sure they match with list obj
-  nnodes <- length (p.env$tree$tip.label) +
-    p.env$tree$Nnode
-  rand.node <- sample (1:nnodes, 1)
-  edges <- getEdges (p.env$tree, node=rand.node)
-  expect_that (p.env$edges[[rand.node]], equals (edges))
+test_that ('.cpShiftY([basic]) works', {
+  # TODO
+})
+test_that ('chromatophylo([basic]) works', {
+  tree <- rtree (100)
+  p <- chromatophylo (tree)
+  expect_that (class (tree), equals ('geom_object'))
 })

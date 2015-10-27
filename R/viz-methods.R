@@ -120,6 +120,7 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
   edge <- which (tree$edge[ ,1] == node)
   # init p.env
   p.env <- new.env (parent=emptyenv ())
+  p.env$tree.stats <- getTreeStats (tree)
   p.env$p.data <- data.frame (x=c(0, 0), y=c(0, y.length),
                               edge=c (0,0))
   p.env$y.length <- y.length
@@ -132,11 +133,9 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
   while (TRUE) {
     # loop through p.data rearranging y coords to avoid overlap
     p.env$overlap <- FALSE
-    lines <- seq (from=3, to=nrow (p.env$p.data), by=2)
-    m_ply (.data=data.frame (sl=lines), .fun=.cpEachSbjct, lines=lines,
-           p.env=p.env)
+    p.env$lines <- seq (from=3, to=nrow (p.env$p.data), by=2)
+    m_ply (.data=data.frame (sl=lines), .fun=.cpEachSbjct, p.env=p.env)
     #return (p.env$p.data)
-    print ('here')
     if (!p.env$overlap) {
       break
     }
@@ -176,55 +175,30 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
   p <- p + xlab ('Time') + theme.opts
   p
 }
-.cpEachQry <- function (ql, p.env, avoid.edges, sbjct, sl.edge) {
-  # unpack p.env
-  p.data <- p.env$p.data
-  y.length <- p.env$y.length
-  x.length <- p.env$x.length
+.cpEachQry <- function (ql, p.env) {
   # get qry
-  qry <- p.data[ql:(ql+1), ]
+  qry <- p.env$p.data[ql:(ql+1), ]
   ql.edge <- unique (qry$edge)
-  if (!ql.edge %in% avoid.edges) {
-    overlap <- .cpCheckOverlap (sbjct, qry, y.length, x.length)
+  if (!ql.edge %in% p.env$avoid.edges) {
+    overlap <- .cpCheckOverlap (p.env$sbjct, qry,
+                                p.env$y.length, p.env$x.length)
     if (overlap) {
       # set overlap to TRUE
       p.env$overlap <- TRUE
-      # find all edges descdning from higher edge and add y.length/2
-      # find all edges descending from lower edge and remove y.length/2
-      # find parent vertical edge and add and remove y.length/2
-      parent.node <- getParent (p.env$tree, edges=c (sl.edge, ql.edge))
-      if (parent.node == p.env$root.node) {
-        parent.edge <- 0
-      } else {
-        parent.edge <- which (p.env$tree$edge[ ,2] == parent.node)
-      }
-      edges <- which (p.env$tree$edge[ ,1] == parent.node)
-      edge.1 <- p.data[p.data$edge == edges[1], ]
-      edge.2 <- p.data[p.data$edge == edges[2], ]
-      if (mean (edge.1$y) >= mean (edge.2$y)) {
-        higher <- edge.1$edge[1]
-        lower <- edge.2$edge[1]
-      } else {
-        higher <- edge.2$edge[1]
-        lower <- edge.1$edge[1]
-      }
-      higher.edges <- c (getEdges (p.env$tree, node=p.env$tree$edge[higher, 2]),
-                         higher)
-      p.data[p.data$edge %in% higher.edges, 'y'] <-
-        p.data[p.data$edge %in% higher.edges, 'y'] + y.length/2
-      lower.edges <- c (getEdges (p.env$tree, node=p.env$tree$edge[lower, 2]),
-                        lower)
-      p.data[p.data$edge %in% lower.edges, 'y'] <-
-        p.data[p.data$edge %in% lower.edges, 'y'] - y.length/2
-      vertical.bool <- which (p.data$edge == parent.edge)
-      vertical.bool <- vertical.bool[(length (vertical.bool) - 1):
-                                       length (vertical.bool)]
-      p.data[vertical.bool[2], 'y'] <- p.data[vertical.bool[2], 'y'] + y.length/2
-      p.data[vertical.bool[1], 'y'] <- p.data[vertical.bool[1], 'y'] - y.length/2
-      # update p.data in p.env
-      p.env$p.data <- p.data
+      # shift ys
+      p.env$p.data <- .cpShiftY (p.env)
     }
   }
+}
+.cpEachSbjct <- function (sl, p.env) {
+  p.env$sbjct <- p.env$p.data[sl:(sl+1), ]
+  # find connecting edges
+  p.env$sl.edge <- unique (sbjct$edge)
+  nodes <- p.env$tree$edge[sl.edge, ]
+  p.env$avoid.edges <- c (which (p.env$tree$edge[ ,2] == nodes[1]),
+                          which (p.env$tree$edge[ ,1] == nodes[2]),
+                          sl.edge)
+  m_ply (.data=data.frame (ql=p.env$lines), .cpEachQry, p.env=p.env)
 }
 .cpCheckOverlap <- function (sbjct, qry, y.length, x.length) {
   # check if sbjct and qry straight lines overlap (within y.length)
@@ -243,17 +217,6 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
   xspace & ycross | yspace & xcross |
     yspace & xspace
 }
-.cpEachSbjct <- function (sl, lines, p.env) {
-  sbjct <- p.env$p.data[sl:(sl+1), ]
-  # find connecting edges
-  sl.edge <- unique (sbjct$edge)
-  nodes <- p.env$tree$edge[sl.edge, ]
-  avoid.edges <- c (which (p.env$tree$edge[ ,2] == nodes[1]),
-                    which (p.env$tree$edge[ ,1] == nodes[2]),
-                    sl.edge)
-  m_ply (.data=data.frame (ql=lines), .cpEachQry, p.env=p.env,
-         avoid.edges=avoid.edges, sbjct=sbjct, sl.edge=sl.edge)
-}
 .cpMkLine <- function (x1, y, edge, p.env) {
   if (length (edge) == 2) {
     # run recursively for both
@@ -261,15 +224,15 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
     .cpMkLine (x1, y[2], edge[2], p.env)
   } else if (length (edge) == 1){
     # find the next node on the edge
-    next.node <- p.env$tree$edge[edge,2]
+    next.node <- p.env$tree.stats[[node]][['next.nodes']]
     # get n.children
-    n.children <- length (getChildren (p.env$tree, next.node))
+    n.children <- p.env$tree.stats[[node]][['n.children']]
     # get the length of the edge
     x2 <- x1 + p.env$tree$edge.length[edge]
     l.data <- data.frame (x=c(x1, x2), y=c(y, y), edge)
     p.env$p.data <- rbind (p.env$p.data, l.data)
     # run again for next edge
-    next.edge <- which (p.env$tree$edge[ ,1] == next.node)
+    next.edge <- p.env$tree.stats[[node]][['next.edges']]
     if (next.node <= length (p.env$tree$tip.label)) {
       # EDIT THIS TO ADD TIP LABELS
       #t.data <<- data.frame (x=(x2+1/N), y=y,
@@ -286,51 +249,55 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
     stop ('Invalid tree')
   }
 }
-
-.cpGetNChildren <- function (p.env) {
-  # generate list of n.children
-  .count <- function (node) {
-    n.children <- length (getChildren (p.env$tree, node=node))
-    res[[node]] <<- n.children
-  }
-  res <- list ()
-  nnodes <- length (p.env$tree$tip.label) +
-    p.env$tree$Nnode
-  l.data <- data.frame (node=1:nnodes, stringsAsFactors=FALSE)
-  m_ply (.data=l.data, .fun=.count)
-  p.env$n.children <- res
-}
-
 .cpGetParentNode <- function (p.env) {
-  # create list where when two edges given, parent node is returned
-  .get <- function (edge1, edge2) {
-    if (paste0 (edge2, '-', edge1) %in% deja.vues) {
-      res[[edge1]][[edge2]] <<- res[[edge2]][[edge1]]
-    } else {
-      p.node <- getParent (p.env$tree, edges=c (edge1, edge2))
-      res[[edge1]][[edge2]] <<- p.node
-    }
-    deja.vues <<- c (deja.vues, paste0 (edge1, '-', edge2))
-  }
-  deja.vues <- NULL  # prevent multiple searches with getParent
-  nedges <- 1:nrow (p.env$tree$edge)
-  res <- as.list (nedges)  # init list with nedges
-  l.data <- expand.grid (nedges, nedges)
-  colnames (l.data) <- c ('edge1', 'edge2')
-  m_ply (.data=l.data, .fun=.get)
-  p.env$parent.nodes <- res
+  # get nodes
+  ql.node <- p.env$tree$edge[p.env$ql.edge, 2]
+  sl.node <- p.env$tree$edge[p.env$sl.edge, 2]
+  # find ascending nodes
+  ql.nodes <- p.env$tree.stats[[ql.node]][['ascend.nodes']]
+  sl.nodes <- p.env$tree.stats[[sl.node]][['ascend.nodes']]
+  # match to find highest shared
+  maxi <- which.max (match (ql.nodes, sl.nodes))
+  ql.nodes[maxi]
 }
-
-.cpGetDescendingEdges <- function (p.env) {
-  # create list where edges are returned for node given
-  .get <- function (node) {
-    edges <- getEdges (p.env$tree, node=node)
-    res[[node]] <<- edges
+.cpShiftY <- function (p.env) {
+  # find all edges descending from higher edge and add y.length/2
+  # find all edges descending from lower edge and remove y.length/2
+  # find parent vertical edge and add and remove y.length/2
+  parent.node <- .cpGetParent (p.env)
+  if (parent.node == p.env$root.node) {
+    parent.edge <- 0
+  } else {
+    parent.edge <- which (p.env$tree$edge[ ,2] == parent.node)
   }
-  res <- list ()
-  nnodes <- length (p.env$tree$tip.label) +
-    p.env$tree$Nnode
-  l.data <- data.frame (node=1:nnodes, stringsAsFactors=FALSE)
-  m_ply (.data=l.data, .fun=.get)
-  p.env$edges <- res
+  # get next edges and their ys
+  edges <- p.env$tree.stats[[parent.node]][['next.edges']]
+  edge.1 <- p.data[p.data$edge == edges[1], ]
+  edge.2 <- p.data[p.data$edge == edges[2], ]
+  if (mean (edge.1$y) >= mean (edge.2$y)) {
+    higher <- edge.1$edge[1]
+    lower <- edge.2$edge[1]
+  } else {
+    higher <- edge.2$edge[1]
+    lower <- edge.1$edge[1]
+  }
+  # higher
+  higher.node <- p.env$tree$edge[higher, 2]
+  higher.edges <- c (p.env$tree.stats[[higher.node]][['descend.edges']],
+                     higher)
+  p.data[p.data$edge %in% higher.edges, 'y'] <-
+    p.data[p.data$edge %in% higher.edges, 'y'] + y.length/2
+  # lower
+  lower.node <- p.env$tree$edge[lower, 2]
+  lower.edges <- c (p.env$tree.stats[[lower.node]][['descend.edges']],
+                    lower)
+  p.data[p.data$edge %in% lower.edges, 'y'] <-
+    p.data[p.data$edge %in% lower.edges, 'y'] - y.length/2
+  # vertical
+  vertical.bool <- which (p.data$edge == parent.edge)
+  vertical.bool <- vertical.bool[(length (vertical.bool) - 1):
+                                   length (vertical.bool)]
+  p.data[vertical.bool[2], 'y'] <- p.data[vertical.bool[2], 'y'] + y.length/2
+  p.data[vertical.bool[1], 'y'] <- p.data[vertical.bool[1], 'y'] - y.length/2
+  p.data
 }
