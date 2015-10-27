@@ -38,9 +38,6 @@
 #' tree.stats[[19]][['prev.edges']]  # the previous edge for node 19 is 2
 #' tree.stats[[20]][['children']]  # all the 'great' apes descend from node 20
 
-# TODO:
-# -- test
-
 getTreeStats <- function (tree) {
   .get <- function (node, res) {
     # assign -- present
