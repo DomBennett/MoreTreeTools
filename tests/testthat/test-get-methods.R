@@ -152,10 +152,36 @@ test_that ('getNodeLabels([basic]) works', {
                is_equivalent_to (c ("Homininae", "Homininae", "Pan")))
 })
 
-test_that ('getClades([basic]) works', {
+test_that ('getSubtrees([basic]) works', {
   clade.trees <- getSubtrees (hominoids, 5, 10)
   # should return two trees of 5 and 8
   expect_that (getSize (clade.trees[[1]]), equals (5))
   expect_that (getSize (clade.trees[[2]]), equals (8))
   expect_that (length (clade.trees), equals (2))
+})
+
+test_that ('getTreeStats([basic]) works', {
+  tree <- rtree (100)
+  nodes <- 1:(length (tree$tip.label) + tree$Nnode)
+  tree.stats <- getTreeStats (tree)
+  # check children
+  rand.node <- sample (nodes, 1)
+  children <- getChildren (tree, node=rand.node)
+  expect_that (tree.stats[[rand.node]][['children']], equals (children))
+  # check edges
+  rand.node <- sample (nodes, 1)
+  edges <- getEdges (tree, node=rand.node)
+  bool <- all (tree.stats[[rand.node]][['descend.edges']] %in% edges &
+                 edges %in% tree.stats[[rand.node]][['descend.edges']])
+  expect_that (bool, is_true ())
+  # check ascending nodes
+  rand.node <- sample (nodes, 1)
+  nodes <- getNodes (tree, node=rand.node)
+  bool <- all (tree.stats[[rand.node]][['ascend.nodes']] %in% nodes &
+                 nodes %in% tree.stats[[rand.node]][['ascend.nodes']])
+  expect_that (bool, is_true ())
+  # check age
+  rand.node <- sample (nodes, 1)
+  age <- getAge (tree, node=rand.node)[ ,2]
+  expect_that (tree.stats[[rand.node]][['age']], equals (age))
 })

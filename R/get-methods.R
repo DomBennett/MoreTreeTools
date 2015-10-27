@@ -49,13 +49,14 @@ getTreeStats <- function (tree) {
     if (length (next.nodes) == 0) {
       next.nodes <- next.edges <- NULL
     }
-    res[[node]][['next.edges']] <- next.nodes
-    res[[node]][['next.nodes']] <- next.edges
-    res[[node]][['prev.edges']] <- tree$edge[tree$edge[ , 2] == node, 1]
-    res[[node]][['prev.nodes']] <- which (tree$edge[ ,2] == node)
+    res[[node]][['next.edges']] <- next.edges
+    res[[node]][['next.nodes']] <- next.nodes
+    res[[node]][['prev.edges']] <- which (tree$edge[ ,2] == node)
+    res[[node]][['prev.nodes']] <- tree$edge[tree$edge[ , 2] == node, 1]
     # assign -- past
     res[[node]][['ascend.nodes']] <- res[[node]][['ascend.nodes']]
-    res[[node]][['ascend.edges']] <- res[[node]][['ascend.edges']]
+    res[[node]][['ascend.edges']] <- c (res[[node]][['ascend.edges']],
+                                        res[[node]][['prev.edges']])
     # assign -- future
     if (is.null (next.nodes)) {
       # set for a tip
@@ -71,10 +72,8 @@ getTreeStats <- function (tree) {
       # setup and run for the next nodes
       for (next.node in next.nodes) {
         res[[next.node]] <- list ()
-        res[[next.node]][['ascend.nodes']] <-
-          c (res[[node]][['ascend.nodes']], node)
-        res[[next.node]][['ascend.edges']] <-
-          c (res[[node]][['ascend.edges']], res[[node]][['prev.edges']])
+        res[[next.node]][['ascend.nodes']] <- c (res[[node]][['ascend.nodes']], node)
+        res[[next.node]][['ascend.edges']] <- res[[node]][['ascend.edges']]
         res <- .get (next.node, res)
         descend.edges <- c (descend.edges,
                             res[[next.node]][['descend.edges']])
@@ -84,8 +83,7 @@ getTreeStats <- function (tree) {
         pd <- pd + res[[next.node]][['pd']]
       }
       # only use one of the next nodes for age
-      age <- tree$edge.length[next.edges[1]] +
-        res[[next.nodes[1]]][['age']]
+      age <- root.age - sum (tree$edge.length [res[[node]][['ascend.edges']]])
     }
     res[[node]][['descend.edges']] <- descend.edges
     res[[node]][['descend.nodes']] <- descend.nodes
@@ -99,6 +97,8 @@ getTreeStats <- function (tree) {
   if (is.null (tree$edge.length)) {
     tree$edge.length <- rep (1, nrow (tree$edge))
   }
+  # get age
+  root.age <- getSize (tree, 'rtt')
   # start with root node
   root.node <- length (tree$tip.label) + 1
   # init res list
