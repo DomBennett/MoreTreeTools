@@ -1,3 +1,114 @@
+#' @name getTreeStats
+#' @title Return large list of trees stats by node
+#' @description Returns a list object of nodes with information
+#' on each node -- see details.
+#' @details Many functions require the navigation of a tree e.g.
+#' finding all descending nodes, counting number of children by node
+#' etc. \code{MoreTreeTools} has many functions for performing these
+#' tasks, but in cases where these function need to be run multiple
+#' times it can be more efficient to generate this information beforehand.
+#' 
+#' A list object is returned, with stats for each node. Stats
+#' generated are:
+#' \itemize{
+#'   \item All nodes from root to node, \code{ascend.nodes}
+#'   \item All edges from root to edge, \code{ascend.edges}
+#'   \item Direct previous node connecting to node, \code{prev.nodes}
+#'   \item Direct previous edges connecting to node, \code{prev.edges}
+#'   \item Tips descending from node, \code{children}
+#'   \item Number of tips descending from node, \code{n.children}
+#'   \item Age of node, \code{age}
+#'   \item Phylogenetic diversity of node, \code{pd}
+#' }
+#' 
+#' Note, this function assumes trees are rooted. If no branch lengths are
+#' given, the function sets all branch lengths to 1. The function is
+#' recursive, for very large trees (100,000 + tips) a stack overflow warning
+#' may appear. Update \code{options(expressions=)} to change the stack limit.
+#' @param tree
+#' @export
+#' @examples
+#' # get hominoids tree
+#' data ('hominoids')
+#' # plot with labels
+#' plot (hominoids);nodelabels();edgelabels();axisPhylo();
+#' # generate tree.stats
+#' tree.stats <- getTreeStats (hominoids)
+#' # corroborate with plot
+#' tree.stats[[19]][['prev.edges']]  # the previous edge for node 19 is 2
+#' tree.stats[[20]][['children']]  # all the 'great' apes descend from node 20
+
+# TODO:
+# -- test
+
+getTreeStats <- function (tree) {
+  .get <- function (node, res) {
+    # assign -- present
+    next.edges <- which (tree$edge[ ,1] == node)
+    next.nodes <- tree$edge[tree$edge[ , 1] == node, 2]
+    if (length (next.nodes) == 0) {
+      next.nodes <- next.edges <- NULL
+    }
+    res[[node]][['next.edges']] <- next.nodes
+    res[[node]][['next.nodes']] <- next.edges
+    res[[node]][['prev.edges']] <- tree$edge[tree$edge[ , 2] == node, 1]
+    res[[node]][['prev.nodes']] <- which (tree$edge[ ,2] == node)
+    # assign -- past
+    res[[node]][['ascend.nodes']] <- res[[node]][['ascend.nodes']]
+    res[[node]][['ascend.edges']] <- res[[node]][['ascend.edges']]
+    # assign -- future
+    if (is.null (next.nodes)) {
+      # set for a tip
+      descend.edges <- descend.nodes <- NULL
+      children <- tree$tip.label[node]
+      age <- 0
+      pd <- 0
+    } else {
+      descend.edges <- next.edges
+      descend.nodes <- next.nodes
+      children <- NULL
+      pd <- sum (tree$edge.length[next.edges])
+      # setup and run for the next nodes
+      for (next.node in next.nodes) {
+        res[[next.node]] <- list ()
+        res[[next.node]][['ascend.nodes']] <-
+          c (res[[node]][['ascend.nodes']], node)
+        res[[next.node]][['ascend.edges']] <-
+          c (res[[node]][['ascend.edges']], res[[node]][['prev.edges']])
+        res <- .get (next.node, res)
+        descend.edges <- c (descend.edges,
+                            res[[next.node]][['descend.edges']])
+        descend.nodes <- c (descend.nodes,
+                            res[[next.node]][['descend.nodes']])
+        children <- c (children, res[[next.node]][['children']])
+        pd <- pd + res[[next.node]][['pd']]
+      }
+      # only use one of the next nodes for age
+      age <- tree$edge.length[next.edges[1]] +
+        res[[next.nodes[1]]][['age']]
+    }
+    res[[node]][['descend.edges']] <- descend.edges
+    res[[node]][['descend.nodes']] <- descend.nodes
+    res[[node]][['children']] <- children
+    res[[node]][['n.children']] <- length (children)
+    res[[node]][['age']] <- age
+    res[[node]][['pd']] <- pd
+    # return
+    res
+  }
+  if (is.null (tree$edge.length)) {
+    tree$edge.length <- rep (1, nrow (tree$edge))
+  }
+  # start with root node
+  root.node <- length (tree$tip.label) + 1
+  # init res list
+  res <- list ()
+  res[[root.node]] <- list ()
+  res[[root.node]][['ascend.nodes']] <-
+    res[[root.node]][['ascend.edges']] <- NULL
+  .get (root.node, res)
+}
+
 #' @name getNodeStats
 #' @title Get node statistics
 #' @description Return dataframe of number of children, age and
