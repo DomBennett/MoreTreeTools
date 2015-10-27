@@ -6,10 +6,13 @@
 library (MoreTreeTools)
 library (testthat)
 
+# PARAMETERS
+ntips <- 10  # number of tips in the tree
+
 # FUNCTIONS
 init <- function () {
   # push random tree and key parameters
-  tree <<- rtree (10)
+  tree <<- rtree (ntips)
   N <<- length (tree$tip.label)
   tree.age <- getSize (tree, 'rtt')
   x.length <<- tree.age/100
@@ -109,4 +112,30 @@ test_that ('.cpGetNChildren([basic]) works', {
   .cpGetNChildren (p.env)
   expect_that (p.env$n.children[[11]], equals (10))
   expect_that (p.env$n.children[[1]], equals (1))
+})
+
+test_that ('.cpGetParentNode([basic]) works', {
+  # init
+  init ()
+  # sanity checks
+  .cpGetParentNode (p.env)
+  # get random edges and make sure they match with list obj
+  edges <- 1:nrow (p.env$tree$edge)
+  edges <- c (sample (edges, 1), sample (edges, 1))
+  p.node <- getParent (p.env$tree, edges=edges)
+  expect_that (p.env$parent.nodes[[edges[1]]][[edges[2]]],
+               equals (p.node))
+})
+
+test_that ('.cpGetDescendingEdges([basic]) works', {
+  # init
+  init ()
+  # sanity checks
+  .cpGetDescendingEdges (p.env)
+  # get random node and make sure they match with list obj
+  nnodes <- length (p.env$tree$tip.label) +
+    p.env$tree$Nnode
+  rand.node <- sample (1:nnodes, 1)
+  edges <- getEdges (p.env$tree, node=rand.node)
+  expect_that (p.env$edges[[rand.node]], equals (edges))
 })

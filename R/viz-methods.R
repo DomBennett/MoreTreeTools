@@ -302,14 +302,35 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
 }
 
 .cpGetParentNode <- function (p.env) {
-  # create list where when two given are given, parent node is returned
+  # create list where when two edges given, parent node is returned
+  .get <- function (edge1, edge2) {
+    if (paste0 (edge2, '-', edge1) %in% deja.vues) {
+      res[[edge1]][[edge2]] <<- res[[edge2]][[edge1]]
+    } else {
+      p.node <- getParent (p.env$tree, edges=c (edge1, edge2))
+      res[[edge1]][[edge2]] <<- p.node
+    }
+    deja.vues <<- c (deja.vues, paste0 (edge1, '-', edge2))
+  }
+  deja.vues <- NULL  # prevent multiple searches with getParent
+  nedges <- 1:nrow (p.env$tree$edge)
+  res <- as.list (nedges)  # init list with nedges
+  l.data <- expand.grid (nedges, nedges)
+  colnames (l.data) <- c ('edge1', 'edge2')
+  m_ply (.data=l.data, .fun=.get)
+  p.env$parent.nodes <- res
 }
 
 .cpGetDescendingEdges <- function (p.env) {
   # create list where edges are returned for node given
+  .get <- function (node) {
+    edges <- getEdges (p.env$tree, node=node)
+    res[[node]] <<- edges
+  }
+  res <- list ()
+  nnodes <- length (p.env$tree$tip.label) +
+    p.env$tree$Nnode
+  l.data <- data.frame (node=1:nnodes, stringsAsFactors=FALSE)
+  m_ply (.data=l.data, .fun=.get)
+  p.env$edges <- res
 }
-
-# Generate before hand:
-# 1. number of children per node -- done
-# 2. parent node of two edges
-# 3. all descending edges by node
