@@ -64,8 +64,12 @@ commplot <- function(cmatrix, tree, groups = rep(1, nrow(cmatrix)),
 #' @title Plot tree through time with coloured edges
 #' @description Return a geom_object() of a phylogenetic tree through time.
 #' Requires tree given to be rooted, time callibrated and bifurcating.
-#' @details No details
+#' @details No details -- see details.
 #' @param tree
+#' @param edge.cols data.frame of values used to colour edges (see example)
+#' @param edge.sizes data.frame of sizes used to determine the size of edges
+#' @param legend.title text for legend if edge.cols provided
+#' @param reduce.overlap boolean, TRUE will prevent edges from overlapping in plot, may take longer to plot
 #' @export
 #' @examples
 #' # Quick example without colours
@@ -101,40 +105,49 @@ commplot <- function(cmatrix, tree, groups = rep(1, nrow(cmatrix)),
 
 # TODO:
 # 1. Take tree data from Newick file efficiently
-# 2. reverse x axis
 # 3. add tips option
-# 4. test
-# 5. speed up
 
-chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='') {
+chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='',
+                           reduce.overlap=TRUE) {
   if (!is.binary.tree (tree)) {
     stop ('Tree must be bifurcating')
   }
   # init plot data
   N <- length (tree$tip.label)
   tree.age <- getSize (tree, 'rtt')
-  x.length <- tree.age/100
-  y.length <- 1
-  x1 <- 0
+  x.spacer <- tree.age/100
+  y.spacer <- 1/N
+  x1 <- tree.age
   node <- length (tree$tip.label) + 1
   edge <- which (tree$edge[ ,1] == node)
   # init p.env
   p.env <- new.env (parent=emptyenv ())
+  p.env$N <- N
+  p.env$all.edges <- 1:nrow (tree$edge)
   p.env$tree.stats <- getTreeStats (tree)
-  p.env$p.data <- data.frame (x=c(0, 0), y=c(0, y.length),
+  p.env$p.data <- data.frame (x=c(x1, x1), y=c(0, 1),
                               edge=c (0,0))
-  p.env$y.length <- y.length
-  p.env$x.length <- x.length
+  p.env$y.spacer <- y.spacer
+  p.env$x.spacer <- x.spacer
   p.env$tree <- tree
   p.env$root.node <- length (tree$tip.label) + 1
   #t.data <- data.frame (x=NA, y=NA, label=NA)
   # generate p.data
-  .cpMkLine (x1, c (0, y.length), edge, p.env)
-  while (TRUE) {
+  .cpMkPData (x1, c (0, 1), edge, p.env)
+  # find all lines
+  p.env$p.data$line <- rep (1:(nrow (p.env$p.data)/2), each=2)
+  p.env$lines <- unique (p.env$p.data$line)[-1]  # ignore root
+  edges <- p.env$p.data$edge[match (p.env$lines, p.env$p.data$line)]
+  # get max and min
+  p.env$maxmin <- data.frame (line=p.env$lines, edge=edges,
+                              max.x=NA, min.x=NA,
+                              max.y=NA, min.y=NA)
+  .cpGetMaxMin (p.env$lines, p.env)
+  while (reduce.overlap) {
     # loop through p.data rearranging y coords to avoid overlap
     p.env$overlap <- FALSE
-    p.env$lines <- seq (from=3, to=nrow (p.env$p.data), by=2)
-    m_ply (.data=data.frame (sl=lines), .fun=.cpEachSbjct, p.env=p.env)
+    # loop through ignoring root
+    m_ply (.data=data.frame (l=p.env$lines), .fun=.cpCheckLine, p.env=p.env)
     #return (p.env$p.data)
     if (!p.env$overlap) {
       break
@@ -171,100 +184,35 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
                       panel.grid.minor.y = element_blank(),
                       panel.grid.major.x = element_line(colour="black"),
                       panel.grid.minor.x = element_line(colour="gray5"))
-  
-  p <- p + xlab ('Time') + theme.opts
+  # add time and reverse to end at 0
+  p <- p + scale_x_reverse() + xlab ('Time') + theme.opts
   p
 }
-.cpEachQry <- function (ql, p.env) {
-  # get qry
-  qry <- p.env$p.data[ql:(ql+1), ]
-  ql.edge <- unique (qry$edge)
-  if (!ql.edge %in% p.env$avoid.edges) {
-    overlap <- .cpCheckOverlap (p.env$sbjct, qry,
-                                p.env$y.length, p.env$x.length)
-    if (overlap) {
-      # set overlap to TRUE
-      p.env$overlap <- TRUE
-      # shift ys
-      p.env$p.data <- .cpShiftY (p.env)
-    }
+.cpGetMaxMin <- function (lines, p.env) {
+  # Write max min for x and y for lines given
+  .maxmin <- function (l) {
+    # get line coords
+    which.line <- p.env$p.data$line == l
+    line <- p.env$p.data[which.line, ]
+    max.x <- max (line$x) + p.env$x.spacer/4
+    min.x <- min (line$x) - p.env$x.spacer/4
+    min.y <- min (line$y) - p.env$y.spacer/4
+    max.y <- max (line$y) + p.env$y.spacer/4
+    res <- data.frame ('max.x'=max.x, 'min.x'=min.x,
+                       'max.y'=max.y, 'min.y'=min.y)
+    which.line <- p.env$maxmin$line == l
+    p.env$maxmin[which.line, 3:6] <- c (max.x, min.x, max.y, min.y)
   }
+  l.data <- data.frame (l=lines)
+  m_ply (.data=l.data, .fun=.maxmin)
 }
-.cpEachSbjct <- function (sl, p.env) {
-  p.env$sbjct <- p.env$p.data[sl:(sl+1), ]
-  # find connecting edges
-  p.env$sl.edge <- unique (sbjct$edge)
-  nodes <- p.env$tree$edge[sl.edge, ]
-  p.env$avoid.edges <- c (which (p.env$tree$edge[ ,2] == nodes[1]),
-                          which (p.env$tree$edge[ ,1] == nodes[2]),
-                          sl.edge)
-  m_ply (.data=data.frame (ql=p.env$lines), .cpEachQry, p.env=p.env)
-}
-.cpCheckOverlap <- function (sbjct, qry, y.length, x.length) {
-  # check if sbjct and qry straight lines overlap (within y.length)
-  maxqx <- max (qry$x) + x.length/4
-  minqx <- min (qry$x) - x.length/4
-  minqy <- min (qry$y) - y.length/4
-  maxqy <- max (qry$y) + y.length/4
-  maxsx <- max (sbjct$x) + x.length/4
-  minsx <- min (sbjct$x) - x.length/4
-  minsy <- min (sbjct$y) - y.length/4
-  maxsy <- max (sbjct$y) + y.length/4
-  xspace <- maxsx > minqx & minsx < maxqx
-  yspace <- maxsy > minqy & minsy < maxqy
-  ycross <- maxsy > maxqy & minsy < minqy
-  xcross <- maxsx > maxqx & minsx < minqx
-  xspace & ycross | yspace & xcross |
-    yspace & xspace
-}
-.cpMkLine <- function (x1, y, edge, p.env) {
-  if (length (edge) == 2) {
-    # run recursively for both
-    .cpMkLine (x1, y[1], edge[1], p.env)
-    .cpMkLine (x1, y[2], edge[2], p.env)
-  } else if (length (edge) == 1){
-    # find the next node on the edge
-    next.node <- p.env$tree.stats[[node]][['next.nodes']]
-    # get n.children
-    n.children <- p.env$tree.stats[[node]][['n.children']]
-    # get the length of the edge
-    x2 <- x1 + p.env$tree$edge.length[edge]
-    l.data <- data.frame (x=c(x1, x2), y=c(y, y), edge)
-    p.env$p.data <- rbind (p.env$p.data, l.data)
-    # run again for next edge
-    next.edge <- p.env$tree.stats[[node]][['next.edges']]
-    if (next.node <= length (p.env$tree$tip.label)) {
-      # EDIT THIS TO ADD TIP LABELS
-      #t.data <<- data.frame (x=(x2+1/N), y=y,
-      #                       label=tree$tip.label[next.node])
-    } else {
-      ys <- c (y-(p.env$y.length/2), y+(p.env$y.length/2))
-      # add vertical connector
-      l.data <- data.frame (x=c(x2, x2), y=ys, edge)
-      p.env$p.data <- rbind (p.env$p.data, l.data)
-      # move on to next edge
-      .cpMkLine (x2, ys, next.edge, p.env)
-    }
-  } else {
-    stop ('Invalid tree')
-  }
-}
-.cpGetParentNode <- function (p.env) {
-  # get nodes
-  ql.node <- p.env$tree$edge[p.env$ql.edge, 2]
-  sl.node <- p.env$tree$edge[p.env$sl.edge, 2]
-  # find ascending nodes
-  ql.nodes <- p.env$tree.stats[[ql.node]][['ascend.nodes']]
-  sl.nodes <- p.env$tree.stats[[sl.node]][['ascend.nodes']]
-  # match to find highest shared
-  maxi <- which.max (match (ql.nodes, sl.nodes))
-  ql.nodes[maxi]
-}
-.cpShiftY <- function (p.env) {
-  # find all edges descending from higher edge and add y.length/2
-  # find all edges descending from lower edge and remove y.length/2
-  # find parent vertical edge and add and remove y.length/2
-  parent.node <- .cpGetParent (p.env)
+.cpCorrectOverlap <- function (edge.1, edge.2, p.env) {
+  # set overlap to TRUE
+  p.env$overlap <- TRUE
+  # find all edges descending from higher edge and add y.spacer/2
+  # find all edges descending from lower edge and remove y.spacer/2
+  # find parent vertical edge and add and remove y.spacer/2
+  parent.node <- .cpGetParentNode (edge.1, edge.2, p.env)
   if (parent.node == p.env$root.node) {
     parent.edge <- 0
   } else {
@@ -272,8 +220,8 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
   }
   # get next edges and their ys
   edges <- p.env$tree.stats[[parent.node]][['next.edges']]
-  edge.1 <- p.data[p.data$edge == edges[1], ]
-  edge.2 <- p.data[p.data$edge == edges[2], ]
+  edge.1 <- p.env$p.data[p.env$p.data$edge == edges[1], ]
+  edge.2 <- p.env$p.data[p.env$p.data$edge == edges[2], ]
   if (mean (edge.1$y) >= mean (edge.2$y)) {
     higher <- edge.1$edge[1]
     lower <- edge.2$edge[1]
@@ -285,19 +233,116 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
   higher.node <- p.env$tree$edge[higher, 2]
   higher.edges <- c (p.env$tree.stats[[higher.node]][['descend.edges']],
                      higher)
-  p.data[p.data$edge %in% higher.edges, 'y'] <-
-    p.data[p.data$edge %in% higher.edges, 'y'] + y.length/2
+  p.env$p.data[p.env$p.data$edge %in% higher.edges, 'y'] <-
+    p.env$p.data[p.env$p.data$edge %in% higher.edges, 'y'] + p.env$y.spacer/2
   # lower
   lower.node <- p.env$tree$edge[lower, 2]
   lower.edges <- c (p.env$tree.stats[[lower.node]][['descend.edges']],
                     lower)
-  p.data[p.data$edge %in% lower.edges, 'y'] <-
-    p.data[p.data$edge %in% lower.edges, 'y'] - y.length/2
+  p.env$p.data[p.env$p.data$edge %in% lower.edges, 'y'] <-
+    p.env$p.data[p.env$p.data$edge %in% lower.edges, 'y'] - p.env$y.spacer/2
   # vertical
-  vertical.bool <- which (p.data$edge == parent.edge)
+  vertical.bool <- which (p.env$p.data$edge == parent.edge)
   vertical.bool <- vertical.bool[(length (vertical.bool) - 1):
                                    length (vertical.bool)]
-  p.data[vertical.bool[2], 'y'] <- p.data[vertical.bool[2], 'y'] + y.length/2
-  p.data[vertical.bool[1], 'y'] <- p.data[vertical.bool[1], 'y'] - y.length/2
-  p.data
+  p.env$p.data[vertical.bool[2], 'y'] <- p.env$p.data[vertical.bool[2], 'y'] + p.env$y.spacer/2
+  p.env$p.data[vertical.bool[1], 'y'] <- p.env$p.data[vertical.bool[1], 'y'] - p.env$y.spacer/2
+  # get all lines where maxmin have changed
+  p.env$maxmin$line[p.env$maxmin$edge %in% c (higher.edges, lower.edges)]
+}
+.cpCheckLine <- function (l, p.env) {
+  # Check if line overlaps with other lines
+  which.line <- p.env$p.data$line == l
+  line <- p.env$p.data[which.line, ]
+  # find connecting edges
+  edge <- line$edge[1]
+  node <- p.env$tree$edge[edge, 2]
+  connecting.edges <- c (p.env$tree.stats[[node]][['ascend.edges']],
+                         p.env$tree.stats[[node]][['descend.edges']])
+  # check and correct overlap
+  potential.edges <- p.env$all.edges[!p.env$all.edges %in% connecting.edges]
+  if (length (potential.edges) == 0) {
+    overlap <- FALSE
+  } else {
+    overlap <- TRUE
+  }
+  sbjct <- p.env$maxmin[p.env$maxmin$line == l, ]
+  while (TRUE) {
+    # check for overlap, correct, check again
+    qry <- p.env$maxmin[p.env$maxmin$edge %in% potential.edges, ]
+    overlap <- .cpCheckOverlap (sbjct, qry)
+    if (any (overlap)) {
+      overlapping.edge <- qry$edge[overlap][1]
+      changed.lines <- .cpCorrectOverlap (edge.1=edge, edge.2=overlapping.edge, p.env)
+      # recalc maxmin for lines that have moved
+      .cpGetMaxMin (changed.lines, p.env)
+    } else {
+      break
+    }
+  }
+}
+.cpCheckOverlap <- function (sbjct, qry) {
+  # Check if sbjct (line) and qry (multiple potential lines)
+  #  overlap using p.env$maxmin
+  # unpack
+  maxsx <- sbjct[ ,'max.x']
+  minsx <- sbjct[ ,'min.x']
+  maxsy <- sbjct[ ,'max.y']
+  minsy <- sbjct[ ,'min.y']
+  maxqx <- qry[ ,'max.x']
+  minqx <- qry[ ,'min.x']
+  maxqy <- qry[ ,'max.y']
+  minqy <- qry[ ,'min.y']
+  # run bools
+  xspace <- maxsx >= minqx & minsx <= maxqx
+  yspace <- maxsy >= minqy & minsy <= maxqy
+  ycross <- maxsy >= maxqy & minsy < minqy
+  xcross <- maxsx >= maxqx & minsx <= minqx
+  xspace & ycross | yspace & xcross |
+    yspace & xspace
+}
+.cpMkPData <- function (x1, y, edge, p.env) {
+  if (length (edge) == 2) {
+    # run recursively for both
+    .cpMkPData (x1, y[1], edge[1], p.env)
+    .cpMkPData (x1, y[2], edge[2], p.env)
+  } else if (length (edge) == 1){
+    # find the next node on the edge
+    next.node <- p.env$tree$edge[edge,2]
+    # get n.children
+    n.children <- p.env$tree.stats[[next.node]][['n.children']]
+    # get the length of the edge
+    x2 <- x1 - p.env$tree$edge.length[edge]
+    l.data <- data.frame (x=c(x1, x2), y=c(y, y), edge)
+    p.env$p.data <- rbind (p.env$p.data, l.data)
+    # run again for next edge
+    next.edge <- p.env$tree.stats[[next.node]][['next.edges']]
+    if (next.node <= length (p.env$tree$tip.label)) {
+      # EDIT THIS TO ADD TIP LABELS
+      #t.data <<- data.frame (x=(x2+1/N), y=y,
+      #                       label=tree$tip.label[next.node])
+    } else {
+      # use n.children to determine y and reduce overlap
+      y.length <- n.children / p.env$N
+      ys <- c (y-(y.length/2), y+(y.length/2))
+      # add vertical connector
+      l.data <- data.frame (x=c(x2, x2), y=ys, edge)
+      p.env$p.data <- rbind (p.env$p.data, l.data)
+      # move on to next edge
+      .cpMkPData (x2, ys, next.edge, p.env)
+    }
+  } else {
+    stop ('Invalid tree')
+  }
+}
+.cpGetParentNode <- function (edge.1, edge.2, p.env) {
+  # get nodes
+  node.1 <- p.env$tree$edge[edge.1, 2]
+  node.2 <- p.env$tree$edge[edge.2, 2]
+  # find ascending nodes
+  nodes.1 <- p.env$tree.stats[[node.1]][['ascend.nodes']]
+  nodes.2 <- p.env$tree.stats[[node.2]][['ascend.nodes']]
+  # match to find highest shared
+  maxi <- which.max (match (nodes.1, nodes.2))
+  nodes.1[maxi]
 }

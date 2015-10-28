@@ -5,17 +5,25 @@
 \title{Plot tree through time with coloured edges}
 \usage{
 chromatophylo(tree, edge.cols = NULL, edge.sizes = NULL,
-  legend.title = "")
+  legend.title = "", reduce.overlap = TRUE)
 }
 \arguments{
 \item{tree}{}
+
+\item{edge.cols}{data.frame of values used to colour edges (see example)}
+
+\item{edge.sizes}{data.frame of sizes used to determine the size of edges}
+
+\item{legend.title}{text for legend if edge.cols provided}
+
+\item{reduce.overlap}{boolean, TRUE will prevent edges from overlapping in plot, may take longer to plot}
 }
 \description{
 Return a geom_object() of a phylogenetic tree through time.
 Requires tree given to be rooted, time callibrated and bifurcating.
 }
 \details{
-No details
+No details -- see details.
 }
 \examples{
 # Quick example without colours
