@@ -325,6 +325,9 @@ calcED <- function (tree, tips = 'all', type = 'FP') {
     rownames (res) <- tips
     res
   }
+  if (is.null (tree$edge.length)) {
+    stop ('Tree has no branch lengths')
+  }
   if (tips[1] == 'all') {
     tips <- tree$tip.label
   }
