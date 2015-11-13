@@ -216,9 +216,17 @@ getOutgroup <- function (tree, tips) {
 
 getExtant <- function (tree, tol=1e-08) {
   # Return all extant tip labels
+  .fun <- .phyloOrNodelist (tree, .getExtant_phylo,
+                            .getExtant_NodeList)
+  .fun ()
+}
+.getExtant_phylo <- function (tree, tol) {
   tip.ages <- getAge (tree, 1:getSize (tree))
   pull <- tip.ages[, 2] < tol
   tree$tip.label[pull]
+}
+.getExtant_NodeList <- function (tree, tol) {
+  cat ('Not yet implemented for NodeList\n')
 }
 
 #' @name getChildren
