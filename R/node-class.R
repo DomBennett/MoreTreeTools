@@ -5,11 +5,20 @@
   i <- which (ids != node$id)
   node$prenode[[1]]$postnode[[i]]
 }
-.Node_age <- function (node, res=0) {
+.Node_postDist <- function (node, res=0) {
   i <- 1
   for (n in node$postnode) {
-    res[i] <- res[i] + n$span
-    res[i] <- .Node_age (n, res[i])
+    res <- c (res[-i], .Node_postDist (n, res[i]))
+    i <- 1 + length (res)
+    res[i] <- 0
+  }
+  max (res + node$span)
+}
+.Node_preDist <- function (node, res=0) {
+  i <- 1
+  for (n in node$prenode) {
+    res[i] <- res[i] + node$span
+    res[i] <- .Node_preDist (n, res[i])
     i <- 1 + length (res)
     res[i] <- 0
   }
@@ -67,21 +76,24 @@ Node <- setRefClass ('Node',
                        'children'=function() {  # return children IDs
                          .Node_children(.self)
                        },
-                       'age'=function() {  # return age
-                         .Node_age(.self)
+                       'preDist'=function() {  # return max dist root-wards
+                         .Node_preDist(.self)
                          },
+                       'postDist'=function() {  # return max dist tip-wards
+                         .Node_postDist(.self)
+                       },
                        'pd'=function() {  # return pd
                          .Node_pd(.self)
                        },
-                       'prenodes'=function() {  # return all nodes to root
+                       'prenodes'=function() {  # return all nodes root-wards
                          .Node_prenodes(.self)
                        }
                        ,
-                       'postnodes'=function() {  # return all nodes to tips
+                       'postnodes'=function() {  # return all nodes tip-wards
                          .Node_postnodes(.self)
                        }))
 
-# Node special methods
+# Display methods
 setGeneric ('as.character')
 setMethod ('as.character', c('x'='Node'),
            function(x) {
