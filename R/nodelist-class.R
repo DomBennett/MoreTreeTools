@@ -1,11 +1,65 @@
 #' @name NodeList
 #' @title NodeList Class
 #' @description \code{MoreTreeTool}'s S4 Class for representing phylogenetic trees.
-#' \code{NodeList} objects hold a list of \code{Node} Reference Class Objects. Each
-#' \code{Node} points to connecting nodes.
+#' A \code{NodeList} object holds a list of \code{Node} Reference Class Objects, each
+#' of which points to connecting nodes. Changing one node changes all other nodes in the
+#' tree. This allows for more efficient tree building, modelling and manipulation.
+#' For example, adding a new node to a tree using a \code{phylo} class requires the
+#' regeneration of the tree edge matrix. Whereas for a \code{NodeList} class the adding
+#' of a new tip is computationally equivalent to adding a new element to a list.
+#' @details Currently available methods:
+#' \itemize{
+#'   \item \code{tips(NodeList)}, list all tips
+#'   \item \code{nodes()}, list all internal nodes
+#'   \item \code{nTips()}, count all tips
+#'   \item \code{nNodes()}, count all internal nodes
+#'   \item \code{rootNode()}, return root node ID
+#'   \item \code{[[]]}, extract \code{Node}
+#'   \item \code{pd()}, get total branch length
+#'   \item \code{age()}, get max root to tip distance
+#'   \item \code{ultrmtrc()}, is ultrametric T/F
+#'   \item \code{plytms()}, is polytomous T/F
+#'   \item \code{extant()}, return extant tips
+#'   \item \code{extinct()}, return extinct tips
+#'   \item \code{setTol()}, set tolerance (default 1e-8)
+#'   \item \code{add()}, add a new tip
+#'   \item \code{remove()}, remove a tip/node
+#' }
+#' 
+#' See examples for these methods in use.
+#' @seealso
+#' \code{\link{Node}}
 #' @exportClass NodeList
 #' @examples
-#' # No examples yet
+#' library (MoreTreeTools)
+#' # phylo
+#' tree_phylo <- rtree (5)
+#' # convert to NodeList
+#' tree_nodelist <- as (tree_phylo, 'NodeList')
+#' # Current available methods
+#' print (tree_nodelist)  # get all 
+#' tips (tree_nodelist)  # return all tips IDs
+#' nodes (tree_nodelist)  # return all internal node IDs
+#' nTips (tree_nodelist)  # count all tips
+#' nNodes (tree_nodelist)  # count all internal nodes
+#' rootNode(tree_nodelist)  # identify root node
+#' tree_nodelist[['t1']]  # return t1 node object
+#' pd (tree_nodelist)  # return phylogenetic diversity
+#' age (tree_nodelist)  # return age of tree
+#' ultrmtrc (tree_nodelist)  # is ultrametric?
+#' plytms (tree_nodelist)  # is polytomous?
+#' extant (tree_nodelist)  # return all extant tip IDs
+#' extinct (tree_nodelist)  # return all extinct tip IDs
+#' tree_nodelist <- setTol (tree_nodelist, 10)  # reset tolerance, default 1e-8
+#' # now tol is higher more tips will be classed as extant
+#' extant (tree_nodelist)
+#' # Adding and removing
+#' node <- tree_nodelist[['t1']]
+#' tree_nodelist <- remove (tree_nodelist, node)
+#' print (tree_nodelist)  # t1 is no longer in tree
+#' # N.B. unlike for a phylo object the corresponding internal
+#' # node for t1 has not been removed, this is deliberate.
+#' tree_nodelist <- add (tree_nodelist, node)  # add the node back
 # TODO: create validity check
 setClass ('NodeList', representation=representation (
   nodelist='list',       # list of Node objects
@@ -138,6 +192,22 @@ setMethod ('setTol', c ('NodeList', 'numeric'),
            })
 
 # Info methods (user friendly)
+setGeneric ('tips', signature=c('x'),
+            function(x) {
+              genericFunction ('tips')
+            })
+setMethod ('tips', 'NodeList',
+           function(x){
+             x@tips
+           })
+setGeneric ('nodes', signature=c('x'),
+            function(x) {
+              genericFunction ('nodes')
+            })
+setMethod ('nodes', 'NodeList',
+           function(x){
+             x@nodes
+           })
 setGeneric ('nTips', signature=c('x'),
             function(x) {
               genericFunction ('nTips')
