@@ -33,13 +33,13 @@ setAs (from="phylo", to="NodeList",
            nodelist[[ids[i]]]$postnode <- postnodes
          }
          if (is.rooted (from)) {
-           root_node <- ids[length (tree$tip.label) + 1]
+           root_node <- ids[length (from$tip.label) + 1]
            nodelist[[root_node]]$span <- 0
            to <- new (to, nodelist=nodelist, root=root_node)
          } else {
            to <- new (to, nodelist=nodelist)
          }
-         .update(to)
+         .update (to)
        })
 
 # NodeList --> phylo
