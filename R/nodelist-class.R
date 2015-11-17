@@ -87,6 +87,9 @@ setMethod ('show', 'NodeList',
            })
 setMethod ('str', c('object'='NodeList'),
            function (object, max.level=2L, ...) {
+             if (is.na (max.level)) {
+               stop ('max.level must be numeric')
+             }
              str@default (object, max.level=max.level, ...)
            })
 setGeneric ('print')
