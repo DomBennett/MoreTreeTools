@@ -12,7 +12,7 @@ setAs (from="phylo", to="NodeList",
          nodelist <- list ()
          for (i in 1:length (ids)) {
            span <- from$edge.length[from$edge[ ,2] == i]
-           node <- new ('Node', span=span, id=ids[i])
+           node <- list ('span'=span, 'id'=ids[i])
            nodelist[[ids[i]]] <- node
          }
          # add pre and post nodes
@@ -21,14 +21,14 @@ setAs (from="phylo", to="NodeList",
            prenodes_ids <- ids[from$edge[from$edge[ ,2] == i, 1]]
            prenodes <- vector ()
            for (id in prenodes_ids) {
-             prenodes <- append (prenodes, nodelist[[id]])
+             prenodes <- append (prenodes, nodelist[[id]]$id)
            }
            nodelist[[ids[i]]]$prenode <- prenodes
            # get postnodes
            postnodes_ids <- ids[from$edge[from$edge[ ,1] == i, 2]]
            postnodes <- vector ()
            for (id in postnodes_ids) {
-             postnodes <- append (postnodes, nodelist[[id]])
+             postnodes <- append (postnodes, nodelist[[id]]$id)
            }
            nodelist[[ids[i]]]$postnode <- postnodes
          }
@@ -39,7 +39,7 @@ setAs (from="phylo", to="NodeList",
          } else {
            to <- new (to, nodelist=nodelist)
          }
-         .update (to)
+         to
        })
 
 # NodeList --> phylo
