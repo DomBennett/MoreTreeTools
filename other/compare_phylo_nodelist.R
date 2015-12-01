@@ -36,9 +36,8 @@ phyloBuilder <- function (tree, iterations) {
 # -----------------
 nodeListBuilder <- function (tree, iterations) {
   for (i in 4:(iterations+3)) {
-    print (i)
     # add tip
-    tree <- .addTip__NodeList (tree, edge='t1',
+    tree <- MoreTreeTools:::.addTip__NodeList (tree, edge='t1',
                                tip_age=0, node_age=0.5,
                                tip_name=paste0('t', i),
                                node_name=paste0('n', i+2))
@@ -74,24 +73,24 @@ pseudoNodeListBuilder <- function (iterations) {
 # -------
 # Testing
 # -------
-repeats <- 100
-res <- data.frame (iterations=NA, timing=NA, builder=NA)
+repeats <- seq (10, 1000, 100)
+res <- data.frame (N_iterations=NA, Timing=NA, Build_method=NA)
 start_phylo <- compute.brlen (stree (3, 'left'))
 start_nodelist <- as (start_phylo, 'NodeList')
-for (iterations in (1:repeats*10)) {
-  # phylo
+for (iterations in repeats) {
+  cat ('\nphylo....', iterations)
   start_time <- Sys.time ()
   tree <- phyloBuilder (start_phylo, iterations)
   end_time <- Sys.time ()
   phylo_time <- end_time - start_time
   rm (tree)
-  # nodelist
+  cat ('\nnodelist....', iterations)
   start_time <- Sys.time ()
   tree <- nodeListBuilder (start_nodelist, iterations)
   end_time <- Sys.time ()
   nodelist_time <- end_time - start_time
   rm (tree)
-  # pseudo-nodelist
+  cat ('\npseudo-nodelist....', iterations)
   start_time <- Sys.time ()
   pseudoNodeListBuilder (iterations)
   end_time <- Sys.time ()
@@ -99,9 +98,9 @@ for (iterations in (1:repeats*10)) {
   #cat ('\nphylo time: ', phylo_time)
   #cat ('\nNodeList time: ', nodelist_time)
   #cat ('\nPseudo-NodeList time: ', pnodelist_time)
-  res <- rbind (res, data.frame (iterations=iterations, timing=c (phylo_time, nodelist_time,
-                                                                  pnodelist_time),
-                                 builder=c('phylo', 'nodelist', 'pnodelist')))
+  res <- rbind (res, data.frame (N_iterations=iterations, Timing=c (phylo_time, nodelist_time,
+                                                                    pnodelist_time),
+                                 Build_method=c('phylo', 'nodelist', 'pseudo-nodelist')))
 }
 p <- ggplot (res, aes (y=timing, x=iterations, colour=builder)) + geom_line()
 print (p)
