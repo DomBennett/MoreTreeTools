@@ -1,3 +1,34 @@
+# Hidden methods
+.tipUpdate <- function (tree, tip_id) {
+  # update node slots when tip is newly added
+  node_id <- tip_id
+  children <- node_id
+  age <- pd <- 0
+  while (length (node_id) > 0) {
+    node <- tree@nodelist[[node_id]]
+    for (postnode in node$postnode) {
+      postnode <- tree@nodelist[[postnode]]
+      children <- c (children, postnode$children)
+      age <- c (age, postnode$age)
+      pd <- c (pd, postnode$pd)
+    }
+    # update node
+    node$children <- unique (children)
+    node$age <- max (age)
+    node$pd <- sum (pd)
+    tree@nodelist[[node$id]] <- node
+    # update age and pd for next node
+    age <- max (age) + node$span
+    pd <- c (pd, node$span)
+    node_id <- node$prenode
+  }
+  tree
+}
+
+.tipDowndate <- function (tree, tip_id) {
+  # downdate node slots when tip is newly removed
+}
+
 #' @name NodeList
 #' @title NodeList Class
 #' @description \code{MoreTreeTool}'s S4 Class for representing phylogenetic trees.
@@ -169,15 +200,14 @@ setMethod ('.update', 'NodeList',
               x@brnchlngth <- all (sapply (x@nodelist, function (x) length (x$span) > 0))
               if (x@brnchlngth) {
                 if (length (x@root) > 0) {
-                  x@age <- x@nodelist[[x@root]]$postDist()
+                  x@age <- x@nodelist[[x@root]]$age
                   extant_is <- unlist (sapply (x@tips, function (i) {
-                    length (x@nodelist[[i]]$postnode) == 0 &
-                      (x@age - x@nodelist[[i]]$preDist()) <= x@tol}))
+                      x@nodelist[[i]]$age <= x@tol}))
                   x@extant <- names (extant_is)[extant_is]
                   x@extinct <- x@tips[!x@tips %in% x@extant]
                   x@ultrmtrc <- all (x@tips %in% extant (x))
                 }
-                x@pd <- sum (unlist (sapply (x@nodelist, function (x) x$span)))
+                x@pd <- x@nodelist[[x@root]]$pd
               }
               x@plytms <- any (sapply (x@nodelist, function (x) length (x$postnode) > 2))
               initialize (x)
