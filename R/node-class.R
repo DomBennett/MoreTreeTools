@@ -131,8 +131,5 @@ setMethod ('show', 'Node',
 setMethod ('str', c('object'='Node'),
            function (object, max.level=2L, ...) {
              # Prevent inf regression
-             if (is.na (max.level)) {
-               stop ('max.level must be numeric')
-             }
              str@default (object, max.level=max.level, ...)
            })
