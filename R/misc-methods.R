@@ -1,15 +1,3 @@
-.phyloOrNodelist <- function (object, phyloFun, nodelistFun) {
-  # Determine whether class is phylo or NodeList
-  # run according function or raise error
-  if (class (object) == 'phylo') {
-    phyloFun
-  } else if (class (object) == 'NodeList') {
-    nodelistFun
-  } else {
-    stop ('Tree must be either of class phylo or NodeList')
-  }
-}
-
 .split0 <- function(r = c(1, 10) , n = 2) {
   # evenly split a range into n
   #
