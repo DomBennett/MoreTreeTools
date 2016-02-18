@@ -344,24 +344,21 @@ plotClades <- function (clades, N=3, clade.stats=NULL, cids=NULL,
       cids <- which (clade.stats$name[i] %in% colnames (clades))
     }
   }
-  cids <- as.vector (cids)  # make sure it's a vector
   gt <- paste0 ('N = ', length (cids))
   p.data <- data.frame(cid=cids, stringsAsFactors=FALSE)  # avoid levels
   if (merge) {
     # if merged into single plot
     p.data <- mdply (.data=data.frame(p.data), .fun=.normalise)[ ,-1]
-#     dps <- round (log(x=nrow (clades), base=10)) - 1
-#     dps <- ifelse (dps <= 1, 1, dps - 1)
-#     p.data$t <- signif (p.data$t, dps)
-#     p.data <- ddply (p.data, .(t), summarise,
-#                      mean.n=mean(n),
-#                      upper.sd=mean(n) + sd (n),
-#                      lower.sd=mean(n) - sd (n))
-    p <- ggplot (p.data, aes (x=t, y=n)) +
-      stat_smooth (method='loess') +
-#       geom_line (aes (x=t, y=mean.n), colour='black') +
-#       geom_line (aes (x=t, y=upper.sd), colour='red', lty=3) +
-#       geom_line (aes (x=t, y=lower.sd), colour='red', lty=3) +
+    dps <- round (log(x=nrow (clades), base=10))
+    p.data$t <- signif (p.data$t, dps)
+    p.data <- ddply (p.data, .(t), summarise,
+                     mean.n=mean(n),
+                     upper.sd=mean(n) + sd (n),
+                     lower.sd=mean(n) - sd (n))
+    p <- ggplot (p.data) +
+      geom_line (aes (x=t, y=mean.n), colour='black') +
+      geom_line (aes (x=t, y=upper.sd), colour='red', lty=3) +
+      geom_line (aes (x=t, y=lower.sd), colour='red', lty=3) +
       theme_bw() + xlab ('Normalised time step') + ylab ('Normalised N')
   } else {
     # combine clades into ggplot plot dataframe
