@@ -21,8 +21,7 @@
 # Variable names:
 #  1. lower case
 #  2. separated by '_'
-#  3. (unless variable names are inherited from another package)
-#  e.g. tip_labels, tree$tip.label
+#  e.g. tip_labels
 #
 # Function/method names:
 #  1. camel case
@@ -39,11 +38,3 @@
 #  2. __[asscociation], being a class name or a function
 #  e.g. .getChildren__NodeList()
 #   .sample__mapNames()
-#
-# Test names:
-#  1. [name of function]([arguments])
-#  2. if default arguments are used, arguments = basic
-#
-#
-#
-#
