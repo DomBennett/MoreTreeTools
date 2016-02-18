@@ -13,8 +13,8 @@
 
 # Node declaration
 node_representation <- representation (children='vector',
-                                       age='numeric',
-                                       span='numeric',
+                                       min_age='numeric',
+                                       max_age='numeric',
                                        prev_node='integer',
                                        next_node='integer',
                                        node_id='integer')
@@ -24,7 +24,7 @@ setMethod ('print', c('x'='Node'),
            function(x){
              cat ('Node: ID=[', x@node_id, '], children=[',
                   length (x@children), '], age=[',
-                  signif (x@age, 2), ']', sep='')
+                  x@max_age, ']', sep='')
            })
 setMethod ('show', 'Node',
            function(object){
@@ -79,9 +79,10 @@ update <- function (nodelist, node_id) {
     next_node <- nodelist[[next_node_id]]
     # for (element in nodelist@elements)
     node@children <- c (node@children, next_node@children)
-    temp_age <- (node@age + next_node@age)
-    node@age <- ifelse (temp_age < node@age, next_node@age,
-                        temp_age)
+    # TODO: fix age update
+    test_age <- (node@age + next_node@age)
+    node@age <- ifelse (test_age > node@age, next_node@age,
+                        test_age)
     nodelist@nodes[[node_id]] <- node
     if (length (nodelist[[node_id]]@prev_node) > 0) {
       nodelist <- .update (nodelist, node@prev_node, node_id)
@@ -95,46 +96,20 @@ update <- function (nodelist, node_id) {
   nodelist
 }
 
-library (ape)
-tree <- rtree (3)
-
-# Get each Node from tree and put into NodeList
 nodelist <- new('NodeList')
-phylo_nodes <- 1:(length (tree$tip.label) + tree$Nnode)
-# init nodelist
-for (i in phylo_nodes) {
-  nodelist <- addNode(nodelist, node_id=i,
-                      parent_node_id=integer(),
-                      age=0, tip=vector())
-}
-# fill in details
-for (i in phylo_nodes) {
-  edge <- which (tree$edge[ ,2] == i)
-  span <- tree$edge.length[edge]
-  if (length (age) == 0) {
-    age <- 0
-  }
-  parent_node_id <- tree$edge[tree$edge[ ,2] == i, 1]
-  tip <- tree$tip.label[i]
-  if (is.na (tip)) {
-    tip <- vector ()
-  }
-  nodelist <- addNode(nodelist, node_id=i,
-                      parent_node_id=parent_node_id,
-                      span=span, tip=tip)
-}
+nodelist <- addNode(nodelist, parent_node=1L, min_age=0, max_age=1, tip='t1')
+nodelist <- addNode(nodelist, parent_node=1L, min_age=0, max_age=0.5, tip='t2')
 
-addNode <- function(nodelist, node_id, parent_node_id,
-                    span, tip) {
-  node <- new ('Node', span=span, prev_node=parent_node_id,
-               node_id=node_id, children=tip)
-  # add new node to list
+addNode <- function(nodelist, parent_node, min_age, max_age, tip=NA) {
+  node_id <- as.integer (length (nodelist@nodes) + 1)
+  children <- c (nodelist@nodes[[parent_node]]@children, tip)
+  node <- new ('Node', min_age=min_age, max_age=max_age,
+              prev_node=parent_node, node_id=node_id,
+              children=children)
   nodelist@nodes[[node_id]] <- node
-  # update
-  update (nodelist, node_id=i)
+  nodelist <- update (nodelist, node_id)
   return (nodelist)
 }
-
 
 
 # setGeneric ('addNode', signature= c('x', 'parent_node', 'min_age',
