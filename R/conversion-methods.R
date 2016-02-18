@@ -11,16 +11,26 @@ setAs (from="phylo", to="NodeList",
          # init nodelist and add to list
          nodelist <- list ()
          for (i in 1:length (ids)) {
-           pre_is <- from$edge[from$edge[ ,2] == i, 1]
-           post_is <- from$edge[from$edge[ ,1] == i, 2]
-           age <- getAge (from, node=i)[ ,2]
-           pd <- sum (from$edge.length[getEdges (from, node=i)])
-           children <- getChildren (from, node=i)
            span <- from$edge.length[from$edge[ ,2] == i]
-           node <- list ('span'=span, 'id'=ids[i], 'age'=age, 'pd'=pd,
-                         'children'=children, 'prenode'=ids[pre_is],
-                         'postnode'=ids[post_is])
+           node <- list ('span'=span, 'id'=ids[i])
            nodelist[[ids[i]]] <- node
+         }
+         # add pre and post nodes
+         for (i in 1:length (ids)) {
+           # get prenodes
+           prenodes_ids <- ids[from$edge[from$edge[ ,2] == i, 1]]
+           prenodes <- vector ()
+           for (id in prenodes_ids) {
+             prenodes <- append (prenodes, nodelist[[id]]$id)
+           }
+           nodelist[[ids[i]]]$prenode <- prenodes
+           # get postnodes
+           postnodes_ids <- ids[from$edge[from$edge[ ,1] == i, 2]]
+           postnodes <- vector ()
+           for (id in postnodes_ids) {
+             postnodes <- append (postnodes, nodelist[[id]]$id)
+           }
+           nodelist[[ids[i]]]$postnode <- postnodes
          }
          if (is.rooted (from)) {
            root_node <- ids[length (from$tip.label) + 1]
@@ -29,7 +39,7 @@ setAs (from="phylo", to="NodeList",
          } else {
            to <- new (to, nodelist=nodelist)
          }
-         .update (to)
+         to
        })
 
 # NodeList --> phylo

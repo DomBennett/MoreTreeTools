@@ -1,10 +1,31 @@
-# test new NodeList
-tree_phylo <- rtree (5)
-tree <- as (tree_phylo, 'NodeList')
+# TODO:
+# -- convert these to vectorized functions, recursive limits the tree size
+# -- rethink age, no need to calculate it on the fly, age is immutable unless node spans are extended
 
-getSize (tree_phylo, 'rtt')
-sum (tree_phylo$edge.length)
+.Node_preDist <- function (tree, node, res=0) {
+  i <- 1
+  for (n in node$prenode) {
+    res[i] <- res[i] + node$span
+    res[i] <- .Node_preDist (tree, tree@nodelist[[n]], res[i])
+    i <- 1 + length (res)
+    res[i] <- 0
+  }
+  max (res)
+}
 
-plot (tree_phylo);nodelabels()
-getAge (tree_phylo, 5)
-tree[['t5']]$age
+.Node_postDist <- function (tree, node, res=0) {
+  i <- 1
+  for (n in node$postnode) {
+    res <- c (res[-i], .Node_postDist (tree, tree@nodelist[[n]], res[i]))
+    i <- 1 + length (res)
+    res[i] <- 0
+  }
+  max (res + node$span)
+}
+
+.getAge__NodeList <- function (tree, node) {
+  tree_age <- .Node_postDist (tree, tree@nodelist[[tree@root]])
+  tree_age - .Node_preDist (tree, tree@nodelist[[node]])
+}
+
+
