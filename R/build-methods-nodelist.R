@@ -2,47 +2,27 @@
                                node_age, tip_age=0) {
   # edge refers to the sister of the new tip to be added
   sister <- tree@nodelist[[edge]]
-  # look up prenode, parent
-  parent <- tree@nodelist[[sister$prenode]]
-  # key stats
-  sister_age <- tree@age - sister$predist
-  parent_age <- tree@age - parent$predist
-  new_sister_span <- node_age - sister_age
-  new_tip_span <- node_age - tip_age
-  new_node_pd <- new_tip_span + new_sister_span
-  new_node_span <- parent_age - node_age
-  new_node_predist <- new_node_span + parent$predist
-  new_tip_predist <- new_tip_span + new_node_predist
-  # create new tip
-  new_tip <- list ('id'=tip_name,
-                   'span'=new_tip_span,
-                   'prenode'=c (node_name),
-                   'postnode'=c (),
-                   'children'=c (),
-                   'pd'=0,
-                   'predist'=new_tip_predist)
+  # look up prenode and up date
+  parent <- sister$prenode[[1]]
+  parent_age <- .getAge__NodeList (tree, parent)
   # create new internal node
-  new_node <- list ('id'=node_name,
-                    'span'=new_node_span,
-                    'prenode'=sister$prenode,
-                    'postnode'=c (sister$id, tip_name),
-                    'children'=c (sister$id, tip_name),
-                    'pd'=new_node_pd,
-                    'predist'=node_age)
-  sister$span <- new_sister_span
+  new_node <- list ('id'=node_name, 'span'=parent_age-node_age,
+                   'prenode'=c (parent))
+  # create new tip
+  new_tip <- list ('id'=tip_name, 'span'=node_age-tip_age,
+                  'prenode'=c (new_node$id))
+  new_node$postnode <- c (sister$id, new_tip$id)
+  # update parent's postnode
+  parent_postnodes <- tree@nodelist[[parent]]$postnode
+  parent_postnodes <- parent_postnodes[parent_postnodes != edge]
+  tree@nodelist[[parent]]$postnode <- c (parent_postnodes, new_node$id)
+  # update sister's prenode
+  tree@nodelist[[edge]]$prenode <- c (new_node$id)
   # add to NodeList
   tree@nodelist[[node_name]] <- new_node
   tree@nodelist[[tip_name]] <- new_tip
-  # loop throgh each prenode
-  node_id <- new_node$prenode
-  while (length (node_id) > 0) {
-    node <- tree@nodelist[[node_id]]
-    node$pd <- node$pd + new_tip_span
-    node$children <- c (node$children, tip_name)
-    tree@nodelist[[node$id]] <- node
-    node_id <- node$prenode
-  }
-  .update (tree)
+  # Update
+  tree
 }
 .removeTip__NodeList <- function (tree, tips, preserve_age) {
   cat ('Not yet implemented for NodeList')

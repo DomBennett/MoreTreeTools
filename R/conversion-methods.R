@@ -2,11 +2,8 @@
 setOldClass ('phylo')
 
 # phylo --> NodeList
-# TODO: handle no branchlengths
 setAs (from="phylo", to="NodeList",
        def=function (from, to) {
-         # key stats
-         tree_age <- getSize (from, 'rtt')
          # unique ids for each node (internal and tip)
          ids <- paste0 ('n', (length (from$tip.label)+1):
                           (length (from$tip.label) + from$Nnode))
@@ -17,15 +14,12 @@ setAs (from="phylo", to="NodeList",
            pre_is <- from$edge[from$edge[ ,2] == i, 1]
            post_is <- from$edge[from$edge[ ,1] == i, 2]
            age <- getAge (from, node=i)[ ,2]
-           predist <- tree_age - age
            pd <- sum (from$edge.length[getEdges (from, node=i)])
            children <- getChildren (from, node=i)
            span <- from$edge.length[from$edge[ ,2] == i]
-           node <- list ('span'=span, 'id'=ids[i], 'pd'=pd,
-                         'children'=children,
-                         'prenode'=ids[pre_is],
-                         'postnode'=ids[post_is],
-                         'predist'=predist)
+           node <- list ('span'=span, 'id'=ids[i], 'age'=age, 'pd'=pd,
+                         'children'=children, 'prenode'=ids[pre_is],
+                         'postnode'=ids[post_is])
            nodelist[[ids[i]]] <- node
          }
          if (is.rooted (from)) {

@@ -200,9 +200,9 @@ setMethod ('.update', 'NodeList',
               x@brnchlngth <- all (sapply (x@nodelist, function (x) length (x$span) > 0))
               if (x@brnchlngth) {
                 if (length (x@root) > 0) {
-                  x@age <- max (sapply (x@nodelist, function (x) x$predist))
+                  x@age <- x@nodelist[[x@root]]$age
                   extant_is <- unlist (sapply (x@tips, function (i) {
-                      (x@age - x@nodelist[[i]]$predist) <= x@tol}))
+                      x@nodelist[[i]]$age <= x@tol}))
                   x@extant <- names (extant_is)[extant_is]
                   x@extinct <- x@tips[!x@tips %in% x@extant]
                   x@ultrmtrc <- all (x@tips %in% extant (x))
