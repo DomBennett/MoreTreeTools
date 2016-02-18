@@ -73,28 +73,34 @@ pseudoNodeListBuilder <- function (iterations) {
 # -------
 # Testing
 # -------
-repeats <- seq (10, 1010, 500)
+repeats <- seq (10, 1000, 100)
 res <- data.frame (N_iterations=NA, Timing=NA, Build_method=NA)
 start_phylo <- compute.brlen (stree (3, 'left'))
 start_nodelist <- as (start_phylo, 'NodeList')
 for (iterations in repeats) {
   cat ('\nphylo....', iterations)
-  phylo_time <- system.time (expr = {
-    tree <- phyloBuilder (start_phylo, iterations)
-    })
+  start_time <- Sys.time ()
+  tree <- phyloBuilder (start_phylo, iterations)
+  end_time <- Sys.time ()
+  phylo_time <- end_time - start_time
   rm (tree)
   cat ('\nnodelist....', iterations)
-  nodelist_time <- system.time (expr={
-    tree <- nodeListBuilder (start_nodelist, iterations)
-    })
+  start_time <- Sys.time ()
+  tree <- nodeListBuilder (start_nodelist, iterations)
+  end_time <- Sys.time ()
+  nodelist_time <- end_time - start_time
   rm (tree)
   cat ('\npseudo-nodelist....', iterations)
-  pnodelist_time <- system.time (expr={
-    pseudoNodeListBuilder (iterations)
-    })
-  res <- rbind (res, data.frame (N_iterations=iterations, Timing=c (phylo_time[3], nodelist_time[3],
-                                                                    pnodelist_time[3]),
+  start_time <- Sys.time ()
+  pseudoNodeListBuilder (iterations)
+  end_time <- Sys.time ()
+  pnodelist_time <- end_time - start_time
+  #cat ('\nphylo time: ', phylo_time)
+  #cat ('\nNodeList time: ', nodelist_time)
+  #cat ('\nPseudo-NodeList time: ', pnodelist_time)
+  res <- rbind (res, data.frame (N_iterations=iterations, Timing=c (phylo_time, nodelist_time,
+                                                                    pnodelist_time),
                                  Build_method=c('phylo', 'nodelist', 'pseudo-nodelist')))
 }
-p <- ggplot (res, aes (y=Timing, x=N_iterations, colour=Build_method)) + geom_line()
+p <- ggplot (res, aes (y=timing, x=iterations, colour=builder)) + geom_line()
 print (p)
