@@ -1,4 +1,5 @@
 # MoreTreeTools
+[![Build Status](https://travis-ci.org/DomBennett/MoreTreeTools.svg?branch=master)](https://travis-ci.org/DomBennett/MoreTreeTools)[![Build Status](https://travis-ci.org/DomBennett/MoreTreeTools.svg?branch=master)](https://travis-ci.org/DomBennett/MoreTreeTools)
 Another collection of functions for manipulating phylogenetic trees in R!
 
 ## Installation
