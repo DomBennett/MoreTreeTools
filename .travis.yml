@@ -1,0 +1,24 @@
+language: r
+
+warnings_are_errors: false
+sudo: required
+
+r_binary_packages:
+  - plyr
+  - ape
+  - RJSONIO
+  - ggplot2
+  - stringr
+  - picante
+  - testthat
+r_github_packages:
+  - jimhester/covr
+  - dombennett/treeman
+
+after_success:
+  - Rscript -e 'covr::coveralls()'
+
+notifications:
+  email:
+  on_success: change
+on_failure: always
