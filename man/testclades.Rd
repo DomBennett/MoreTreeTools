@@ -18,7 +18,7 @@
 \examples{
 data (testclades) # load objects
 # plot
-plotClades (clades=unif.clades, i=1:ncol (unif.clades), merge=TRUE)
-plotClades (clades=arch.clades, i=1:ncol (arch.clades), merge=TRUE)
+plotClades (clades=unif.clades, cids=1:ncol (unif.clades), merge=TRUE)
+plotClades (clades=arch.clades, cids=1:ncol (arch.clades), merge=TRUE)
 }
 \keyword{datasets}

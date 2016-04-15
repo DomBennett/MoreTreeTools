@@ -22,24 +22,24 @@ No details
 }
 \examples{
 # Generate a balanced tree
-tree <- compute.brlen (stree (16, 'balanced'))
+#tree <- compute.brlen (stree (16, 'balanced'))
 # Generate perfect phylogenetic signal traits
 # (Note: trait vector should be named)
-trait <- c (rep (1, 8), rep (0, 8))
-names (trait) <- tree$tip.label
+#trait <- c (rep (1, 8), rep (0, 8))
+#names (trait) <- tree$tip.label
 # Plot blocks ...
-blockplot (tree, factor(trait), title = 'Perfect signal', gradient = FALSE)
+#blockplot (tree, factor(trait), title = 'Perfect signal', gradient = FALSE)
 # Or gradient ....
-blockplot (tree, trait, title = 'Perfect signal', gradient = TRUE)
+#blockplot (tree, trait, title = 'Perfect signal', gradient = TRUE)
 # Repeat with evenly distributed traits ...
-trait <- rep (c (0, 1), 8)
-names (trait) <- tree$tip.label
-blockplot (tree, trait, gradient = TRUE, title = 'Maximally overdispered')
+#trait <- rep (c (0, 1), 8)
+#names (trait) <- tree$tip.label
+#blockplot (tree, trait, gradient = TRUE, title = 'Maximally overdispered')
 # The more evenly distributed, the more symetrical
 # the pattern
 # A random distribution of traits ...
-trait <- randCommData (tree, nsites = 1, nspp = 8)[1, ]
-blockplot (tree, trait, title = 'Random trait', gradient = TRUE)
+#trait <- randCommData (tree, nsites = 1, nspp = 8)[1, ]
+#blockplot (tree, trait, title = 'Random trait', gradient = TRUE)
 # ... isn't as symetrical
 }
 \references{

@@ -26,7 +26,7 @@ n <- 16
 tree <- compute.brlen (stree (n, 'left'))
 plot (tree, show.tip.label=FALSE, edge.width=2, main='Unbalanced')
 # +11 steps to make tree balanced
-tree <- reBalanced (tree, 11)
+tree <- reBalance (tree, 11)
 plot (tree, show.tip.label=FALSE, edge.width=2, main='Rebalanced')
 }
 \references{

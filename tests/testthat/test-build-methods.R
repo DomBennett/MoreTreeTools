@@ -27,7 +27,7 @@ test_that ('addTip([basic]) works', {
 })
 
 test_that ('removeTip([preserve.age=FALSE]) works', {
-  tree <- rtree (5)
+  tree <- rtree (10)
   res <- removeTip (tree, tips=c ('t1', 't2'), preserve.age=FALSE)
   mat.before <- cophenetic.phylo (tree)
   mat.after <- cophenetic.phylo (res)
@@ -37,7 +37,7 @@ test_that ('removeTip([preserve.age=FALSE]) works', {
 })
 
 test_that ('removeTip([preserve.age=TRUE]) works', {
-  tree <- rtree (5)
+  tree <- rtree (10)
   res <- removeTip (tree, tips=c ('t1', 't2'), preserve.age=TRUE)
   age.before <- getSize (tree, 'rtt')
   age.after <- getSize (res, 'rtt')

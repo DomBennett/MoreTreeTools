@@ -31,38 +31,7 @@
 #' @param time.intervals vector of time represented by each tree in trees
 #' @export
 #' @examples
-#' library (MoreTreeTools)
-#' # simulate an EDBMM tree (this will take time!)
-#' trees <- runEDBMM (birth=2, death=1, stop.at=200, record=TRUE,
-#'                    progress.bar='time')
-#' # get raw number of descendents by node for trees
-#' clades <- getCladeSuccess (trees)
-#' # get independent number of descendents by node
-#' clades.ind <- getCladeSuccess (trees, ind=TRUE)
-#' # calculate stats by clade
-#' clade.stats <- calcCladeStats (clades)
-#' clade.ind.stats <- calcCladeStats (clades.ind)
-#' # plot the trajectories of the 5 biggest clades
-#' plotClades (clades=clades, clade.stats=clade.stats, k=5)
-#' # plot clades through time for all clades that went extinct
-#' # by the end of the simulation (there are 11 time steps in the simulation)
-#' selection <- which (clade.stats$end < 11 &
-#'                       clade.stats$max.size > 2)
-#' plotClades (clades=clades, i=selection)
-#' plotClades (clades=clades, i=selection, merge=TRUE)
-#' # compare with ind clades
-#' selection <- which (clade.ind.stats$end < 11 &
-#'                       clade.ind.stats$max.size > 2)
-#' plotClades (clades=clades.ind, i=selection)
-#' plotClades (clades=clades.ind, i=selection, merge=TRUE)
-#' # it is difficult to detect a difference in clade shape
-#' # with so few time steps. Instead let's load some generated
-#' # test clades
-#' data ('testclades')
-#' # this loads 'unif.clades' and 'arch.clades'
-#' plotClades (clades=unif.clades, i=1:ncol (unif.clades), merge=TRUE)
-#' plotClades (clades=arch.clades, i=1:ncol (arch.clades), merge=TRUE)
-#' # now we can see a difference
+#' #library (MoreTreeTools)
 
 getCladeSuccess <- function (trees, ind=FALSE, count.extincts=FALSE,
                              time.intervals=1:length(trees)) {
@@ -172,39 +141,6 @@ getCladeSuccess <- function (trees, ind=FALSE, count.extincts=FALSE,
 #' @param clades dataframe where columns are clades and rows are numbers
 #'  of descendents by time step as returned by getCladeSuccess()
 #' @export
-#' @examples
-#' library (MoreTreeTools)
-#' # simulate an EDBMM tree (this will take time!)
-#' trees <- runEDBMM (birth=2, death=1, stop.at=200, record=TRUE,
-#'                    progress.bar='time')
-#' # get raw number of descendents by node for trees
-#' clades <- getCladeSuccess (trees)
-#' # get independent number of descendents by node
-#' clades.ind <- getCladeSuccess (trees, ind=TRUE)
-#' # calculate stats by clade
-#' clade.stats <- calcCladeStats (clades)
-#' clade.ind.stats <- calcCladeStats (clades.ind)
-#' # plot the trajectories of the 5 biggest clades
-#' plotClades (clades=clades, clade.stats=clade.stats, k=5)
-#' # plot clades through time for all clades that went extinct
-#' # by the end of the simulation (there are 11 time steps in the simulation)
-#' selection <- which (clade.stats$end < 11 &
-#'                       clade.stats$max.size > 2)
-#' plotClades (clades=clades, i=selection)
-#' plotClades (clades=clades, i=selection, merge=TRUE)
-#' # compare with ind clades
-#' selection <- which (clade.ind.stats$end < 11 &
-#'                       clade.ind.stats$max.size > 2)
-#' plotClades (clades=clades.ind, i=selection)
-#' plotClades (clades=clades.ind, i=selection, merge=TRUE)
-#' # it is difficult to detect a difference in clade shape
-#' # with so few time steps. Instead let's load some generated
-#' # test clades
-#' data ('testclades')
-#' # this loads 'unif.clades' and 'arch.clades'
-#' plotClades (clades=unif.clades, i=1:ncol (unif.clades), merge=TRUE)
-#' plotClades (clades=arch.clades, i=1:ncol (arch.clades), merge=TRUE)
-#' # now we can see a difference
 #' @references
 #' Gould, S. J., Gilinsky, N. L., & German, R. Z. (1987). Asymmetry of
 #' lineages and the direction of evolutionary time. Science (New York, N.Y.),
@@ -278,39 +214,6 @@ calcCladeStats <- function (clades) {
 #' @param legend boolean, display legend? Default FALSE
 #' @param merge boolean, plot normalised clade trajectory? Default FALSE
 #' @export
-#' @examples
-#' library (MoreTreeTools)
-#' # simulate an EDBMM tree (this will take time!)
-#' trees <- runEDBMM (birth=2, death=1, stop.at=200, record=TRUE,
-#'                    progress.bar='time')
-#' # get raw number of descendents by node for trees
-#' clades <- getCladeSuccess (trees)
-#' # get independent number of descendents by node
-#' clades.ind <- getCladeSuccess (trees, ind=TRUE)
-#' # calculate stats by clade
-#' clade.stats <- calcCladeStats (clades)
-#' clade.ind.stats <- calcCladeStats (clades.ind)
-#' # plot the trajectories of the 5 biggest clades
-#' plotClades (clades=clades, clade.stats=clade.stats, k=5)
-#' # plot clades through time for all clades that went extinct
-#' # by the end of the simulation (there are 11 time steps in the simulation)
-#' selection <- which (clade.stats$end < 11 &
-#'                       clade.stats$max.size > 2)
-#' plotClades (clades=clades, i=selection)
-#' plotClades (clades=clades, i=selection, merge=TRUE)
-#' # compare with ind clades
-#' selection <- which (clade.ind.stats$end < 11 &
-#'                       clade.ind.stats$max.size > 2)
-#' plotClades (clades=clades.ind, i=selection)
-#' plotClades (clades=clades.ind, i=selection, merge=TRUE)
-#' # it is difficult to detect a difference in clade shape
-#' # with so few time steps. Instead let's load some generated
-#' # test clades
-#' data ('testclades')
-#' # this loads 'unif.clades' and 'arch.clades'
-#' plotClades (clades=unif.clades, i=1:ncol (unif.clades), merge=TRUE)
-#' plotClades (clades=arch.clades, i=1:ncol (arch.clades), merge=TRUE)
-#' # now we can see a difference
 
 plotClades <- function (clades, N=3, clade.stats=NULL, cids=NULL,
                         legend=FALSE, merge=FALSE) {

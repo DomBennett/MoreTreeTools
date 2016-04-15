@@ -15,7 +15,7 @@
 #' # convert to logged z-score to increase colour spectrum in plot
 #' edge.diversity$count <- log (edge.diversity$count)
 #' edge.diversity$col <- (edge.diversity$count - mean (edge.diversity$count)) / sd (edge.diversity$count)
-#' treeplot (tree, edge.cols=edge.diversity, legend.title='Diversity')
+#' chromatophylo (tree, edge.cols=edge.diversity, legend.title='Diversity')
 
 calcEdgeDiversity <- function (tree, n.intervals) {
   # internal
