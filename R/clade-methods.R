@@ -341,7 +341,7 @@ plotClades <- function (clades, N=3, clade.stats=NULL, cids=NULL,
       # get top N clades by total size
       cids <- order (clade.stats$tot.size, decreasing=TRUE)[1:N]
       # get their position in clades
-      cids <- which (clade.stats$name[i] %in% colnames (clades))
+      cids <- which (clade.stats$cid %in% colnames (clades))
     }
   }
   gt <- paste0 ('N = ', length (cids))

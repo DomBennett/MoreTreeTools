@@ -78,11 +78,11 @@ test_that ('plotClades([merge=FALSE]) works', {
 test_that ('plotClades([merge=TRUE]) works', {
   # simple class test
   test.clades <- genTestClades (n.clades=10, n.time=10, genUnif)
-  p <- plotClades (clades=test.clades, i=1:ncol(test.clades), merge=TRUE)
+  p <- plotClades (clades=test.clades, cids=1:ncol(test.clades), merge=TRUE)
   class.bool <- all (class (p) %in% c ("gg", "ggplot"))
   expect_true (class.bool)
-  test.clades <- testCladePlot (n.clades=10, n.time=10, genArch)
-  p <- plotClades (clades=test.clades, i=1:ncol(test.clades), merge=TRUE)
+  test.clades <- genTestClades (n.clades=10, n.time=10, genArch)
+  p <- plotClades (clades=test.clades, cid=1:ncol(test.clades), merge=TRUE)
   class.bool <- all (class (p) %in% c ("gg", "ggplot"))
   expect_true (class.bool)
 })

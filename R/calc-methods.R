@@ -55,7 +55,7 @@ calcEdgeDiversity <- function (tree, n.intervals) {
       n.children <- n.children + as.numeric (cutters)
       # keep edge and new count + edge label if available
       temp <- edge.stats[ ,!colnames (edge.stats) %in% 
-                         c ('node.1', 'node.2', 'age.1', 'age.2', 'n.children')]
+                         c ('node.1', 'node.2', 'age.1', 'age.2', 'n.children'), FALSE]
       temp$count <- n.children
       return (temp)
     }
@@ -66,7 +66,7 @@ calcEdgeDiversity <- function (tree, n.intervals) {
   edge.stats.ref <- getEdgeStats (tree)
   tree.age <- getSize (tree, 'rtt')
   ts <- seq (from=tree.age, to=0, length.out=n.intervals+1)
-  mdply (.data=data.frame (i=2:length (ts)),
+  mdply (.data=data.frame (i=2:length (ts), stringsAsFactors=FALSE),
          .fun=.count)[ ,-1]
 }
 
