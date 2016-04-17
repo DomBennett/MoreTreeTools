@@ -1,5 +1,5 @@
 # MoreTreeTools
-[![Build Status](https://travis-ci.org/DomBennett/MoreTreeTools.svg?branch=master)](https://travis-ci.org/DomBennett/MoreTreeTools)[![Build Status](https://travis-ci.org/DomBennett/MoreTreeTools.svg?branch=master)](https://travis-ci.org/DomBennett/MoreTreeTools)
+[![Build Status](https://travis-ci.org/DomBennett/MoreTreeTools.svg?branch=master)](https://travis-ci.org/DomBennett/MoreTreeTools)[![Coverage Status](https://coveralls.io/repos/github/DomBennett/MoreTreeTools/badge.svg?branch=master)](https://coveralls.io/github/DomBennett/MoreTreeTools?branch=master)[![DOI](https://zenodo.org/badge/4641/DomBennett/MoreTreeTools.svg)](https://zenodo.org/badge/latestdoi/4641/DomBennett/MoreTreeTools)
 
 Another collection of functions for manipulating phylogenetic trees in R! It uses a wide range of dependencies
 and builds tools to link them all.
