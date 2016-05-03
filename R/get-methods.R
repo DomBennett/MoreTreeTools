@@ -637,7 +637,7 @@ getNodeLabels <- function (tree, all = FALSE, datasource = 4) {
                                          "lineage"])
       lineages <- strsplit (lineages, "\\|")
       lineages <- lineages[!is.na (lineages)]
-      if (length (lineages) > 0) {
+      if (length (lineages) > 1) {
         node.label[i] <- .findClade (lineages)
       }
     }
