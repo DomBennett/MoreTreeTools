@@ -41,7 +41,7 @@ calcEdgeDiversity <- function (tree, n.intervals) {
     if (length (edges) > 1) {
       # find all tip nodes younger than t1
       ignore.tips <- NULL
-      m_ply (.data=data.frame (tip=tree$tip.label, stringsAsFactors=FALSE),
+      plyr::m_ply (.data=data.frame (tip=tree$tip.label, stringsAsFactors=FALSE),
              .fun=.findIgnoreTips)
       # calc edge stats ignoring ignore.tips
       edge.stats <- getEdgeStats (tree, edges=edges,
@@ -50,7 +50,7 @@ calcEdgeDiversity <- function (tree, n.intervals) {
       # add 1 to all connecting nodes to the cutters
       cutters <- edge.stats$age.1 > t1 & edge.stats$age.2 < t1
       n.children <- edge.stats$n.children
-      m_ply (.data=data.frame (cutter=which (cutters)),
+      plyr::m_ply (.data=data.frame (cutter=which (cutters)),
              .fun=.accountForCutters)
       n.children <- n.children + as.numeric (cutters)
       # keep edge and new count + edge label if available
@@ -66,7 +66,7 @@ calcEdgeDiversity <- function (tree, n.intervals) {
   edge.stats.ref <- getEdgeStats (tree)
   tree.age <- getSize (tree, 'rtt')
   ts <- seq (from=tree.age, to=0, length.out=n.intervals+1)
-  mdply (.data=data.frame (i=2:length (ts), stringsAsFactors=FALSE),
+  plyr::mdply (.data=data.frame (i=2:length (ts), stringsAsFactors=FALSE),
          .fun=.count)[ ,-1]
 }
 
@@ -116,7 +116,7 @@ reduceTree <- function (tree, level, datasource = 4) {
   gnr.obj <- taxaResolve (names, datasource = datasource)
   data <- data.frame (lineage = gnr.obj['lineage'], rank = gnr.obj['rank'])
   # match level to rank, and extract lineage
-  higher.names <- mdply (.data = data, .fun = .pull)[ ,3]
+  higher.names <- plyr::mdply (.data = data, .fun = .pull)[ ,3]
   # drop all unresolved tips
   if (any (is.na (higher.names))) {
     cat (paste0 ("[", sum (is.na (higher.names)),
@@ -205,38 +205,38 @@ calcComPhyMets <- function(cmatrix, tree, min.spp = 2,
   res <- data.frame ('Site'=rownames (cmatrix))
   # calc each metric and add to res
   if ('PD1' %in% metrics) {
-    temp <- mdply (.data = data.frame (i = 1:nrow (cmatrix)),
+    temp <- plyr::mdply (.data = data.frame (i = 1:nrow (cmatrix)),
                    .fun = calcPD, type=1)[ ,2]
     res <- data.frame (res, 'PD1'=temp)
   }
   if ('PD2' %in% metrics) {
-    temp <- mdply (.data = data.frame (i = 1:nrow (cmatrix)),
+    temp <- plyr::mdply (.data = data.frame (i = 1:nrow (cmatrix)),
                    .fun = calcPD, type=2)[ ,2]
     res <- data.frame (res, 'PD2'=temp)
   }
   if ('PD3' %in% metrics) {
-    temp <- mdply (.data = data.frame (i = 1:nrow (cmatrix)),
+    temp <- plyr::mdply (.data = data.frame (i = 1:nrow (cmatrix)),
                    .fun = calcPD, type=3)[ ,2]
     res <- data.frame (res, 'PD3'=temp)
   }
   if ('PSV' %in% metrics) {
-    temp <- psv (samp=cmatrix, tree=tree)[ ,1]
+    temp <- picante::psv (samp=cmatrix, tree=tree)[ ,1]
     res <- data.frame (res, 'PSV'=temp)
   }
   if ('PSR' %in% metrics) {
-    temp <- psr (samp=cmatrix, tree=tree)[ ,1]
+    temp <- picante::psr (samp=cmatrix, tree=tree)[ ,1]
     res <- data.frame (res, 'PSR'=temp)
   }
   if ('PSE' %in% metrics) {
-    temp <- pse (samp=cmatrix, tree=tree)[ ,1]
+    temp <- picante::pse (samp=cmatrix, tree=tree)[ ,1]
     res <- data.frame (res, 'PSE'=temp)
   }
   if ('PSC' %in% metrics) {
-    temp <- psc (samp=cmatrix, tree=tree)[ ,1]
+    temp <- picante::psc (samp=cmatrix, tree=tree)[ ,1]
     res <- data.frame (res, 'PSC'=temp)
   }
   if ('PSD' %in% metrics) {
-    temp <- psd (samp=cmatrix, tree=tree)[ ,1]
+    temp <- picante::psd (samp=cmatrix, tree=tree)[ ,1]
     res <- data.frame (res, 'PSD'=temp)
   }
   res
@@ -295,7 +295,7 @@ calcED <- function (tree, tips = 'all', type = 'FP') {
     nodes <- 1:(getSize (tree) + tree$Nnode)
     # remove root node
     nodes <- nodes[-1 * (getSize (tree) + 1)]
-    m_ply (.data = data.frame (node = nodes), .fun = .calc)
+    plyr::m_ply (.data = data.frame (node = nodes), .fun = .calc)
     res <- data.frame (FP = colSums (edge.matrix[ ,tips]))
   }
   calcEqualSplits <- function (tips) {
@@ -309,7 +309,7 @@ calcED <- function (tree, tips = 'all', type = 'FP') {
       }
       res
     }
-    res <- mdply (.data = data.frame (sp = tips), .fun = .calc)
+    res <- plyr::mdply (.data = data.frame (sp = tips), .fun = .calc)
     res <- data.frame (ES = res[, 2])
     rownames (res) <- tips
     res
@@ -320,7 +320,7 @@ calcED <- function (tree, tips = 'all', type = 'FP') {
       tip.edge <- which (tree$edge[, 2] == tip.index)
       tree$edge.length[tip.edge]
     }
-    res <- mdply (.data = data.frame (sp = tips), .fun = getEdgeLength)
+    res <- plyr::mdply (.data = data.frame (sp = tips), .fun = getEdgeLength)
     res <- data.frame (PE = res[, 2])
     rownames (res) <- tips
     res
@@ -626,7 +626,7 @@ calcTrip <- function (tree1, tree2, normalised) {
   # loop through all combinations,
   # count all triplets where the outgroups differ
   counter <- 0
-  m_ply (.data=data.frame(i=1:ncol (all.tips)),
+  plyr::m_ply (.data=data.frame(i=1:ncol (all.tips)),
          .fun=.count)
   if (normalised) {
     return (counter / ncol (all.tips))
@@ -664,7 +664,7 @@ calcBalance <- function (tree, node = 'all') {
     node <- (getSize (tree) + 1):
       (getSize (tree) + (tree$Nnode))
   }
-  by.node <- mdply (.data = data.frame (node=node), .fun = .calc)
+  by.node <- plyr::mdply (.data = data.frame (node=node), .fun = .calc)
   # total number of steps to balance in tree
   b.steps <- sum (by.node$b.steps[1:(nrow (by.node) - 1)] !=
                     by.node$b.steps[2:nrow (by.node)])

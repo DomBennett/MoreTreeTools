@@ -238,7 +238,7 @@ removeTip <- function (tree, tips, preserve.age) {
     stop ('Removing too many tips, smallest resulting tree is 3 tips')
   }
   loop.data <- data.frame (tip.name=tips, stringsAsFactors=FALSE)
-  m_ply (.data=loop.data, .fun=.run)
+  plyr::m_ply (.data=loop.data, .fun=.run)
   tree
 }
 

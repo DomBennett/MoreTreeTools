@@ -4,25 +4,21 @@
 \alias{getNodeLabels}
 \title{Get node labels based on online taxonomic database}
 \usage{
-getNodeLabels(tree, all = FALSE, datasource = 4)
+getNodeLabels(tree, all = FALSE)
 }
 \arguments{
 \item{tree}{phylogenetic tree (ape class)}
 
 \item{all}{count tips as nodes, default False}
-
-\item{datasource}{a number indicating the GNR datasource to search against}
 }
 \description{
 Return names of each node in tree based on searching tip labels
- in the Global Names Resolver \url{http://resolver.globalnames.org/}
+ through Global Names Resolver \url{http://resolver.globalnames.org/} in NCBI.
 }
 \details{
 For each node, all the children are searched, the taxonomic lineages returned and
 then searched to find the lowest shared name.
-All the tip labels are searched against a specified taxonomic database through the GNR.
- The default is NCBI (4). For a list of other possible datasources see:
-  \url{http://resolver.globalnames.biodinfo.org/data_sources}
+All the tip labels are searched against a specified taxonomic database through the GNR and NCBI.
 }
 \examples{
 # example.var <- exampleFun (test.data)

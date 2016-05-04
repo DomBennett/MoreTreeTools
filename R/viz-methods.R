@@ -147,7 +147,7 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
     # loop through p.data rearranging y coords to avoid overlap
     p.env$overlap <- FALSE
     # loop through ignoring root
-    m_ply (.data=data.frame (l=p.env$lines), .fun=.cpCheckLine, p.env=p.env)
+    plyr::m_ply (.data=data.frame (l=p.env$lines), .fun=.cpCheckLine, p.env=p.env)
     #return (p.env$p.data)
     if (!p.env$overlap) {
       break
@@ -204,7 +204,7 @@ chromatophylo <- function (tree, edge.cols=NULL, edge.sizes=NULL, legend.title='
     p.env$maxmin[which.line, 3:6] <- c (max.x, min.x, max.y, min.y)
   }
   l.data <- data.frame (l=lines)
-  m_ply (.data=l.data, .fun=.maxmin)
+  plyr::m_ply (.data=l.data, .fun=.maxmin)
 }
 .cpCorrectOverlap <- function (edge.1, edge.2, p.env) {
   # set overlap to TRUE

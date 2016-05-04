@@ -40,7 +40,7 @@ getCladeSuccess <- function (trees, ind=FALSE, count.extincts=FALSE,
   .get <- function (i) {
     .countChildren (trees[[i]], ind, count.extincts)
   }
-  clade.successes <- mlply (.data = data.frame (i = 1:length (trees)),
+  clade.successes <- plyr::mlply (.data = data.frame (i = 1:length (trees)),
                             .fun = .get)
   .reformat (clade.successes, time.intervals)
 }
@@ -73,10 +73,10 @@ getCladeSuccess <- function (trees, ind=FALSE, count.extincts=FALSE,
     extants <- getExtant (tree)
   }
   if (ind) {
-    res <- mdply (.data = data.frame (node.label = node.labels),
+    res <- plyr::mdply (.data = data.frame (node.label = node.labels),
                   .fun = .countind)
   } else {
-    res <- mdply (.data = data.frame (node.label = node.labels),
+    res <- plyr::mdply (.data = data.frame (node.label = node.labels),
                   .fun = .count)
   }
   colnames (res) <- c ('node', 'n.children')
@@ -94,7 +94,7 @@ getCladeSuccess <- function (trees, ind=FALSE, count.extincts=FALSE,
     0
   }
   .getNode <- function (node) {
-    mdply (.data = data.frame (
+    plyr::mdply (.data = data.frame (
       i = 1:length (clade.performance)),
       .fun = .getTime, node)[ ,2]
   }
@@ -107,14 +107,14 @@ getCladeSuccess <- function (trees, ind=FALSE, count.extincts=FALSE,
     res <<- res
   }
   # get nodes across times
-  nodes <- unique (unlist (llply (.data = clade.performance,
+  nodes <- unique (unlist (plyr::llply (.data = clade.performance,
                                   .fun = function (x) as.vector(x$node))))
   # build res dataframe by adding first results
   res <- data.frame (.getNode (nodes[1]))
   colnames (res) <- nodes[1]
   nodes <- data.frame (node = nodes[-1])
   # add to res
-  m_ply (.data = nodes, .fun = .addNode)
+  plyr::m_ply (.data = nodes, .fun = .addNode)
   rownames (res) <- time.intervals
   res
 }
@@ -176,7 +176,7 @@ calcCladeStats <- function (clades) {
     }
     data.frame (tot.size, max.size, time.span, start, end, cm, cg)
   }
-  mdply (.data = data.frame (cid = colnames (clades),
+  plyr::mdply (.data = data.frame (cid = colnames (clades),
                              stringsAsFactors=FALSE),
          .fun = .calc)
 }
@@ -251,10 +251,10 @@ plotClades <- function (clades, N=3, clade.stats=NULL, cids=NULL,
   p.data <- data.frame(cid=cids, stringsAsFactors=FALSE)  # avoid levels
   if (merge) {
     # if merged into single plot
-    p.data <- mdply (.data=data.frame(p.data), .fun=.normalise)[ ,-1]
+    p.data <- plyr::mdply (.data=data.frame(p.data), .fun=.normalise)[ ,-1]
     dps <- round (log(x=nrow (clades), base=10))
     p.data$t <- signif (p.data$t, dps)
-    p.data <- ddply (p.data, .(t), summarise,
+    p.data <- plyr::ddply (p.data, plyr::.(t), plyr::summarise,
                      mean.n=mean(n),
                      upper.sd=mean(n) + sd (n),
                      lower.sd=mean(n) - sd (n))
@@ -265,7 +265,7 @@ plotClades <- function (clades, N=3, clade.stats=NULL, cids=NULL,
       theme_bw() + xlab ('Normalised time step') + ylab ('Normalised N')
   } else {
     # combine clades into ggplot plot dataframe
-    p.data <- mdply (.data=p.data, .fun=.combine)[ ,-1]
+    p.data <- plyr::mdply (.data=p.data, .fun=.combine)[ ,-1]
     p <- ggplot (p.data, aes (x=t, y=n, colour=c)) +
       geom_line() + theme_bw() +
       xlab ('Time step') + ylab ('N')

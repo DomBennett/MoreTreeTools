@@ -35,9 +35,9 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
     #create query from names
     url <- "http://resolver.globalnames.org/name_resolvers.json?"
     data_source_ids <- paste0 ("&data_source_ids=", datasource)
-    names2 <- paste0 ("names=", paste0 (str_replace_all (
+    names2 <- paste0 ("names=", paste0 (stringr::str_replace_all (
       batch.names, " ", "+"), collapse = "|"))
-    query <- paste (compact (list (url, names2,
+    query <- paste (plyr::compact (list (url, names2,
                                    data_source_ids)), collapse = "")
     #search via API
     data <- .safeFromJSON (query)$data
@@ -95,7 +95,7 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
   if (genus & length (failed) > 0) {
     # if genus, search just genus names
     genus.names <- sub ('\\s+.*', '', res$search.name[failed])
-    genus.res <- taxaResolve (genus.names, batch, datasource, genus=FALSE)
+    genus.res <- taxaResolve(genus.names, batch, datasource, genus=FALSE)
     # replace in original results, all slots except search.name
     res[failed,-1] <- genus.res[ ,-1]
   }
@@ -107,7 +107,7 @@ taxaResolve <- function (names, batch=100, datasource=4, genus=TRUE) {
   trys <- 0
   waittime <- 2
   while (trys < max.trys) {
-    json.obj <- try (fromJSON (url), silent = TRUE)
+    json.obj <- try (RJSONIO::fromJSON(url), silent = TRUE)
     if (class (json.obj) == 'try-error') {
       cat ('---- Connection failed: trying again in [', waittime,
            's]----\n', sep='')

@@ -138,7 +138,7 @@ getNodeStats <- function (tree, nodes='all', ignore.tips=NULL) {
     nodes <- 1:tree$Nnode + length (tree$tip.label)
   }
   loop.data <- data.frame (node=nodes, stringsAsFactors=FALSE)
-  res <- mdply (.data=loop.data, .fun=.calc)
+  res <- plyr::mdply (.data=loop.data, .fun=.calc)
   if (!is.null (tree$node.label)) {
     res$node.label <- tree$node.label[nodes]
   }
@@ -178,7 +178,7 @@ getEdgeStats <- function (tree, edges='all', ignore.tips=NULL) {
     edges <- 1:nrow (tree$edge)
   }
   loop.data <- data.frame (edge=edges, stringsAsFactors=FALSE)
-  res <- mdply (.data=loop.data, .fun=.calc)
+  res <- plyr::mdply (.data=loop.data, .fun=.calc)
   if (!is.null (tree$edge.label)) {
     res$edge.label <- tree$edge.label[edges]
   }
@@ -347,14 +347,14 @@ getAge <- function (tree, node='all', edge=NULL) {
   }
   tree.age <- max (diag (vcv.phylo (tree)))
   if (!is.null (edge)) {
-    res <- mdply (.data = data.frame (edge=edge), .fun = runEdge)
+    res <- plyr::mdply (.data = data.frame (edge=edge), .fun = runEdge)
   } else if (node[1] != 'all') {
-    res <- mdply (.data = data.frame (node=node), .fun = run)
+    res <- plyr::mdply (.data = data.frame (node=node), .fun = run)
     colnames (res)[2] <- 'age'
   } else {
     # else node == all, run on all nodes
     nodes <- 1:(length (tree$tip.label) + tree$Nnode)
-    res <- mdply (.data = data.frame (node = nodes), .fun = run)
+    res <- plyr::mdply (.data = data.frame (node = nodes), .fun = run)
     colnames (res)[2] <- 'age'
   }
   return (res)
@@ -385,11 +385,11 @@ getSister <- function (tree, node = 'all') {
   }
   if (node[1] == 'all') {
     nodes <- (getSize (tree) + 2):(getSize (tree) + tree$Nnode)
-    res <- mdply (.data = data.frame (node = nodes),
+    res <- plyr::mdply (.data = data.frame (node = nodes),
                   .fun = .getSister)
     colnames (res)[2] <- 'sister'
   } else if (length (node) > 1) {
-    res <- mdply (.data = data.frame (node = node),
+    res <- plyr::mdply (.data = data.frame (node = node),
                   .fun = .getSister)
     colnames (res)[2] <- 'sister'
   } else {
@@ -590,12 +590,12 @@ getClades <- function (tree) {
   } else {
     nodes <- tree$all.node
   }
-  clades <- mlply (.data = data.frame (node = nodes),
+  clades <- plyr::mlply (.data = data.frame (node = nodes),
                    .fun = getChildren, tree)
   if (!is.null (tree$all.node.label)) {
     names (clades) <- tree$all.node.label
   }
-  sizes <- ldply (.data = clades, .fun = length)[ ,2]
+  sizes <- plyr::ldply (.data = clades, .fun = length)[ ,2]
   clades <- clades[order (sizes, decreasing = TRUE)]
   nodes <- nodes[order (sizes, decreasing = TRUE)]
   list (clade.children = clades, clade.node = nodes)
@@ -604,24 +604,22 @@ getClades <- function (tree) {
 #' @name getNodeLabels
 #' @title Get node labels based on online taxonomic database
 #' @description Return names of each node in tree based on searching tip labels
-#'  in the Global Names Resolver \url{http://resolver.globalnames.org/}
+#'  through Global Names Resolver \url{http://resolver.globalnames.org/} in NCBI.
 #' @details For each node, all the children are searched, the taxonomic lineages returned and
 #' then searched to find the lowest shared name.
-#' All the tip labels are searched against a specified taxonomic database through the GNR.
-#'  The default is NCBI (4). For a list of other possible datasources see:
-#'   \url{http://resolver.globalnames.biodinfo.org/data_sources}
+#' All the tip labels are searched against a specified taxonomic database through the GNR and NCBI.
 #' @template base_template
 #' @param all count tips as nodes, default False
-#' @param datasource a number indicating the GNR datasource to search against
 #' @export
 #' @examples
 #' # example.var <- exampleFun (test.data)
-
-getNodeLabels <- function (tree, all = FALSE, datasource = 4) {
+# TODO: add compatibility with other GNR datasources
+# TODO: catalogue of life, unlike NCBI, does not keep lineages and rank lengths constant between names
+getNodeLabels <- function (tree, all = FALSE) {
   # Use GNR to label all nodes in a phylogeny
   # first replace all _ with spaces
   tree$tip.label <- gsub ('_', ' ', tree$tip.label)
-  taxa.res <- taxaResolve (tree$tip.label, datasource = datasource)
+  taxa.res <- taxaResolve (tree$tip.label, datasource = 4)
   nodes <- 1:(length (tree$tip.label) + tree$Nnode)
   node.label <- rep (NA, length (nodes))
   # for tips use the first word of the name
@@ -698,7 +696,7 @@ getSubtrees <- function (tree, min.n, max.n, verbose = FALSE) {
   # create a vector of n tips and node number for each clade
   n <- node.number <- NULL
   # loop through nodes writing info to children and n
-  m_ply (.data = data.frame (node = nodes), .fun = countChildren)
+  plyr::m_ply (.data = data.frame (node = nodes), .fun = countChildren)
   if (is.null (n)) {
     if (verbose) {
       cat (paste0 ('\nNo subtreess found between [', min.n,
@@ -719,7 +717,7 @@ getSubtrees <- function (tree, min.n, max.n, verbose = FALSE) {
     # work out overlap between this node and other nodes
     those <- (1:length (n))[-this]
     these.names <- children[[this]]
-    bool <- mdply (.data = data.frame (i = those), .fun = checkNode,
+    bool <- plyr::mdply (.data = data.frame (i = those), .fun = checkNode,
                    these.names)[ ,2]
     # if this node's n is greater than its overlapping 'those nodes' keep,
     #  else drop

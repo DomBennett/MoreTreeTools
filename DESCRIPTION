@@ -12,11 +12,12 @@ Depends:
     methods,
     ape,
     treeman,
-    plyr,
+    ggplot2,
+Imports:
+    picante,
     RJSONIO,
     stringr,
-    ggplot2,
-    picante
+    plyr
 Suggests:
     testthat
 RoxygenNote: 5.0.1

@@ -93,11 +93,11 @@ reGravitise <- function (tree, factor) {
   # if factor is negative, downGravitise
   if (factor < 0) {
     factor <- abs (factor)
-    m_ply (.data = data.frame (node = internal.nodes),
+    plyr::m_ply (.data = data.frame (node = internal.nodes),
            .fun = downGravitise)
   } else {
     # else upGravitise
-    m_ply (.data = data.frame (node = internal.nodes),
+    plyr::m_ply (.data = data.frame (node = internal.nodes),
            .fun = upGravitise)
   }
   tree
@@ -160,6 +160,6 @@ reBalance <- function (tree, steps) {
   }
   # set all edges to 1 -- so branch is comensurate with taxonomic distance
   tree$edge.length <- rep (1, nrow (tree$edge))
-  m_ply (.data = data.frame (i = 1:abs (steps)), .fun = run)
+  plyr::m_ply (.data = data.frame (i = 1:abs (steps)), .fun = run)
   tree
 }

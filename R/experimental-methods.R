@@ -40,7 +40,7 @@ blockplot <- function (tree, trait, gradient = TRUE, title = NULL) {
     }
     trait.type.names <- names (trait)[
       trait == unique (trait)[i]]
-    res <- mdply (.data = data.frame (i = 1:length (
+    res <- plyr::mdply (.data = data.frame (i = 1:length (
       children.by.edge)), .fun = .byEdge,
       trait.type.names)[ ,2]
     res * tree$edge.length
@@ -62,7 +62,7 @@ blockplot <- function (tree, trait, gradient = TRUE, title = NULL) {
     edges <- getEdges (tree, tips = tip, type = 2)
     temp <- edge.mappings[,tree$edge[, 2] %in%
                             tree$edge[edges, 2], drop=FALSE]
-    res <- mdply (.data = data.frame (
+    res <- plyr::mdply (.data = data.frame (
       j = 1:length (temp)), .fun = .eachTip)[ ,-1]
     res$x2 <- cumsum (res$p.trait)
     res$x1 <- c (0, res$x2[-nrow (res)])
@@ -90,7 +90,7 @@ blockplot <- function (tree, trait, gradient = TRUE, title = NULL) {
     }
     tip.data <- rectcoords[rectcoords$tip == unique (
       rectcoords$tip)[i], ]
-    mdply (.data = data.frame (j = 1:length (
+    plyr::mdply (.data = data.frame (j = 1:length (
       unique (tip.data$edges))), .fun = .byEdge)[ ,-1]
   }
   # 1/calc FP -- needed to determine width of bar for each tip
@@ -99,27 +99,27 @@ blockplot <- function (tree, trait, gradient = TRUE, title = NULL) {
   y1 <- c (0, y2[-length (y2)])
   # get tips descending from each edge (or more precisely the
   #  terminal node of each edge)
-  children.by.edge <- mlply (.data = data.frame (
+  children.by.edge <- plyr::mlply (.data = data.frame (
     node = tree$edge[ ,2]), .fun = getChildren, tree)
   # get proportion of edge.length of each trait based on FP
   trait.types <- unique (trait)
   if (is.factor (trait)) {
-    edge.mappings <- mdply (.data = data.frame (
+    edge.mappings <- plyr::mdply (.data = data.frame (
       i = 1:length (trait.types)), .fun = .byTraitType)[ ,-1]
   } else {
-    edge.mappings <- t (mdply (.data = data.frame (
+    edge.mappings <- t (plyr::mdply (.data = data.frame (
       i = 1:nrow (tree$edge)), .fun = .byTraitValue)[ ,-1, FALSE])
   }
   colnames (edge.mappings) <- tree$edge[, 2]
   # for each tip, find all its edges, stick together
   #  into a single data.frame for geom_rect ()
   # geom_rect () requires xy coordinates
-  rectcoords <- mdply (.data = data.frame (
+  rectcoords <- plyr::mdply (.data = data.frame (
     i = 1:getSize (tree)), .fun = .byTip)
   if (gradient & length (trait.types) == 2) {
     # if gradient, merge p.trait for each edge for
     #  each tip
-    rectcoords <- mdply (.data = data.frame (
+    rectcoords <- plyr::mdply (.data = data.frame (
       i = 1:length (unique (rectcoords$tip))),
       .fun = .forGradient)[ ,-1]
     p <- ggplot (rectcoords, aes (xmin = x1, xmax = x2,
@@ -179,9 +179,9 @@ flowplot <- function (tree, n=getSize(tree)) {
     }
     edges <- which ((edge.ages[ ,1] < xmax | edge.ages[ ,2] < xmax) &
                       (edge.ages[ ,1] >= xmin | edge.ages[ ,2] >= xmin))
-    res <- mdply (.data=data.frame (edge=edges), .fun=.get)[ ,-1]
+    res <- plyr::mdply (.data=data.frame (edge=edges), .fun=.get)[ ,-1]
     ymin <- 0
-    mdply (.data=data.frame(ymax=ys), .fun=.fill)[ ,-1]
+    plyr::mdply (.data=data.frame(ymax=ys), .fun=.fill)[ ,-1]
   }
   .getPixels <- function (tree, n) {
     xs <- seq (0, 1, length.out=n+1)
