@@ -611,16 +611,19 @@ getClades <- function (tree) {
 #' @template base_template
 #' @param all count tips as nodes, default False
 #' @param cache T/F, create a local cache of downloaded names?
+#' @param parent specify parent of all names to prevent false names
 #' @export
 #' @examples
 #' # example.var <- exampleFun (test.data)
 # TODO: add compatibility with other GNR datasources
 # TODO: catalogue of life, unlike NCBI, does not keep lineages and rank lengths constant between names
-getNodeLabels <- function (tree, all=FALSE, cache=FALSE) {
+getNodeLabels <- function (tree, all=FALSE, cache=FALSE,
+                           parent=NULL) {
   # Use GNR to label all nodes in a phylogeny
   # first replace all _ with spaces
   tree$tip.label <- gsub ('_', ' ', tree$tip.label)
-  taxa.res <- taxaResolve (tree$tip.label, datasource = 4, cache=cache)
+  taxa.res <- taxaResolve (tree$tip.label, datasource = 4, cache=cache,
+                           parent=parent)
   nodes <- 1:(length (tree$tip.label) + tree$Nnode)
   node.label <- rep (NA, length (nodes))
   # for tips use the first word of the name

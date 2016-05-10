@@ -11,6 +11,7 @@
 #' @param genus boolean, if true will search against GNR with just the genus
 #'  name for names that failed to resolve using the full species name
 #' @param cache T/F, create a local cache of downloaded names?
+#' @param parent specify parent of all names to prevent false names
 #' @export
 #' @examples
 #' my.lovely.names <- c ('Gallus gallus', 'Pongo pingu', 'Homo sapiens',
@@ -22,7 +23,7 @@
 #' print (lineages[[6]])  # the bacteria has far fewer taxonomic levels
 
 taxaResolve <- function (nms, batch=100, datasource=4, genus=TRUE,
-                         cache=FALSE) {
+                         cache=FALSE, parent=NULL) {
   .replace <- function (i, slot.name) {
     # controlled extraction
     element <- data[[i]]$result[[1]][[slot.name]]
@@ -86,6 +87,7 @@ taxaResolve <- function (nms, batch=100, datasource=4, genus=TRUE,
     lineage <- lineage.ids <- rank <- taxid <-
     match.type <- prescore <- score <- rep (NA, length (nms))
   for (i in 1:length (data)){
+    parent_test <- TRUE
     nd <- data[[i]]
     if(cache) {
       fp <- file.path("gnr_cache", paste0(names(data)[i], ".RData"))
@@ -97,15 +99,21 @@ taxaResolve <- function (nms, batch=100, datasource=4, genus=TRUE,
       search.name[i] <- nms[i]
     } else {
       search.name[i] <- nms[i]
-      name.string[i] <- .replace(i, 'name_string')
-      canonical.form[i] <- .replace(i, 'canonical_form')
-      lineage[i] <- .replace(i, 'classification_path')
-      lineage.ids[i] <- .replace(i, 'classification_path_ids')
-      rank[i] <- .replace(i, 'classification_path_ranks')
-      taxid[i] <- .replace(i, 'taxon_id')
-      match.type[i] <- .replace(i, 'match_type')
-      prescore[i] <- .replace(i, 'prescore')
-      score[i] <- nd$results[[1]]$score
+      lng <- .replace(i, 'classification_path')
+      if(!is.null(parent)) {
+        parent_test <- grepl(parent, lng)
+      }
+      if(parent_test) {
+        name.string[i] <- .replace(i, 'name_string')
+        canonical.form[i] <- .replace(i, 'canonical_form')
+        lineage[i] <- lng
+        lineage.ids[i] <- .replace(i, 'classification_path_ids')
+        rank[i] <- .replace(i, 'classification_path_ranks')
+        taxid[i] <- .replace(i, 'taxon_id')
+        match.type[i] <- .replace(i, 'match_type')
+        prescore[i] <- .replace(i, 'prescore')
+        score[i] <- nd$results[[1]]$score
+      }
     }
   }
   res <- data.frame (search.name=search.name,
