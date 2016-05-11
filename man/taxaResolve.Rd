@@ -4,10 +4,11 @@
 \alias{taxaResolve}
 \title{Resolve taxonmic names online}
 \usage{
-taxaResolve(names, batch = 100, datasource = 4, genus = TRUE)
+taxaResolve(nms, batch = 100, datasource = 4, genus = TRUE,
+  cache = FALSE, parent = NULL)
 }
 \arguments{
-\item{names}{vector of names}
+\item{nms}{vector of names}
 
 \item{batch}{size of the batches to be queried}
 
@@ -15,6 +16,10 @@ taxaResolve(names, batch = 100, datasource = 4, genus = TRUE)
 
 \item{genus}{boolean, if true will search against GNR with just the genus
 name for names that failed to resolve using the full species name}
+
+\item{cache}{T/F, create a local cache of downloaded names?}
+
+\item{parent}{specify parent of all names to prevent false names}
 }
 \description{
 Resolve taxonomic names via the Global Names Resolver.
@@ -28,7 +33,7 @@ list and IDs. Default is 4 for NCBI.
 \examples{
 my.lovely.names <- c ('Gallus gallus', 'Pongo pingu', 'Homo sapiens',
                       'Arabidopsis thaliana', 'Macaca thibetana', 'Bacillus subtilis')
-res <- taxaResolve (names=my.lovely.names)
+res <- taxaResolve (nms=my.lovely.names)
 length (colnames (res))  # 10 different metadata for returned names including original search name
 # let's look at the lineages
 lineages <- strsplit (as.vector (res$lineage), '\\\\|')

@@ -4,12 +4,16 @@
 \alias{getNodeLabels}
 \title{Get node labels based on online taxonomic database}
 \usage{
-getNodeLabels(tree, all = FALSE)
+getNodeLabels(tree, all = FALSE, cache = FALSE, parent = NULL)
 }
 \arguments{
 \item{tree}{phylogenetic tree (ape class)}
 
 \item{all}{count tips as nodes, default False}
+
+\item{cache}{T/F, create a local cache of downloaded names?}
+
+\item{parent}{specify parent of all names to prevent false names}
 }
 \description{
 Return names of each node in tree based on searching tip labels

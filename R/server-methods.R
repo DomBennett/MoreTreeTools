@@ -89,10 +89,6 @@ taxaResolve <- function (nms, batch=100, datasource=4, genus=TRUE,
   for (i in 1:length (data)){
     parent_test <- TRUE
     nd <- data[[i]]
-    if(cache) {
-      fp <- file.path("gnr_cache", paste0(names(data)[i], ".RData"))
-      save(nd, file=fp)
-    }
     if (!'results' %in% names (nd)){
       search.name[i] <- nms[i]
     } else if (nd[[1]] %in% avoid) {
@@ -113,6 +109,10 @@ taxaResolve <- function (nms, batch=100, datasource=4, genus=TRUE,
         match.type[i] <- .replace(i, 'match_type')
         prescore[i] <- .replace(i, 'prescore')
         score[i] <- nd$results[[1]]$score
+        if(cache) {
+          fp <- file.path("gnr_cache", paste0(names(data)[i], ".RData"))
+          save(nd, file=fp)
+        }
       }
     }
   }
@@ -127,7 +127,8 @@ taxaResolve <- function (nms, batch=100, datasource=4, genus=TRUE,
   if (genus & length (failed) > 0) {
     # if genus, search just genus names
     genus.nms <- sub ('\\s+.*', '', res$search.name[failed])
-    genus.res <- taxaResolve(genus.nms, batch, datasource, genus=FALSE)
+    genus.res <- taxaResolve(genus.nms, batch, datasource, genus=FALSE,
+                             parent=parent, cache=cache)
     # replace in original results, all slots except search.name
     res[failed,-1] <- genus.res[ ,-1]
   }
