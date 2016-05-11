@@ -167,7 +167,9 @@ test_that ('getTreeStats([basic]) works', {
   # check children
   rand.node <- sample (nodes, 1)
   children <- getChildren (tree, node=rand.node)
-  expect_that (tree.stats[[rand.node]][['children']], equals (children))
+  test_bool <- c(tree.stats[[rand.node]][['children']] %in% children,
+                 children %in% tree.stats[[rand.node]][['children']])
+  expect_that (all(test_bool), is_true())
   # check edges
   rand.node <- sample (nodes, 1)
   edges <- getEdges (tree, node=rand.node)
