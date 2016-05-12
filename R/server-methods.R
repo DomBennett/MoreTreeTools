@@ -68,19 +68,20 @@ taxaResolve <- function (nms, batch=100, datasource=4, genus=TRUE,
       if(file.exists(fp)) {
         load(fp)
         data[[nms[i]]] <- nd
+        deja_vues[i] <- TRUE
       }
     }
   }
-  trms <- trms[!deja_vues]
-  nms <- nms[!deja_vues]
-  # Split nms into batch sized chunks
-  #  http://stackoverflow.com/questions/3318333/split-a-vector-into-chunks-in-r
-  x <- seq_along (trms)
-  btrms <- split (trms, ceiling (x/batch))
-  bnms <- split (nms, ceiling (x/batch))
-  for (i in 1:length(btrms)) {
-    temp.data <- batchResolve(btrms[[i]])
-    data[bnms[[i]]] <- temp.data
+  if(sum(!deja_vues) > 0) {
+    # Split nms into batch sized chunks
+    #  http://stackoverflow.com/questions/3318333/split-a-vector-into-chunks-in-r
+    x <- seq_along (trms)
+    btrms <- split (trms[!deja_vues], ceiling (x/batch))
+    bnms <- split (nms[!deja_vues], ceiling (x/batch))
+    for (i in 1:length(btrms)) {
+      temp.data <- batchResolve(btrms[[i]])
+      data[bnms[[i]]] <- temp.data
+    }
   }
   #transform results into output
   search.name <- name.string <- canonical.form <-
@@ -89,6 +90,10 @@ taxaResolve <- function (nms, batch=100, datasource=4, genus=TRUE,
   for (i in 1:length (data)){
     parent_test <- TRUE
     nd <- data[[i]]
+    if(cache & !deja_vues[i]) {
+      fp <- file.path("gnr_cache", paste0(names(data)[i], ".RData"))
+      save(nd, file=fp)
+    }
     if (!'results' %in% names (nd)){
       search.name[i] <- nms[i]
     } else if (nd[[1]] %in% avoid) {
@@ -109,10 +114,6 @@ taxaResolve <- function (nms, batch=100, datasource=4, genus=TRUE,
         match.type[i] <- .replace(i, 'match_type')
         prescore[i] <- .replace(i, 'prescore')
         score[i] <- nd$results[[1]]$score
-        if(cache) {
-          fp <- file.path("gnr_cache", paste0(names(data)[i], ".RData"))
-          save(nd, file=fp)
-        }
       }
     }
   }
